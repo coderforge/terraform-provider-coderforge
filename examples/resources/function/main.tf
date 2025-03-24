@@ -4,7 +4,7 @@ terraform {
       source = "terraform.coderforge.org/coderforge/coderforge"
     }
   }
-  required_version = ">= 1.1.0"
+  required_version = ">= 0.1.0"
 }
 
 provider "coderforge" {
