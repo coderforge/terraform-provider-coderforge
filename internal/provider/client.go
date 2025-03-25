@@ -8,9 +8,10 @@ import (
 	"time"
 )
 
-const HostURL string = "http://localhost:8073"
+const HostURL string = "https://api.coderforge.org"
 
 type Client struct {
+	StackId    string
 	HostURL    string
 	HTTPClient *http.Client
 	Token      string
@@ -18,8 +19,9 @@ type Client struct {
 	Locations  []string
 }
 
-func NewClient(token *string, cloudSpace *string, locations *[]string) (*Client, error) {
+func NewClient(token *string, cloudSpace *string, locations *[]string, stackId *string) (*Client, error) {
 	c := Client{
+		StackId:    *stackId,
 		HostURL:    HostURL,
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		Token:      *token,

@@ -37,6 +37,7 @@ func (c *Client) GetResource(ctx context.Context, resourceID string) (*ResourceI
 
 func (c *Client) CreateResource(ctx context.Context, resourceItem ResourceItem) (*ResourceItem, error) {
 	cloudData := CloudData{
+		StackId:    c.StackId,
 		CloudSpace: c.CloudSpace,
 		Locations:  c.Locations,
 		ResourceItems: []ResourceItem{
@@ -76,6 +77,7 @@ func (c *Client) CreateResource(ctx context.Context, resourceItem ResourceItem) 
 
 func (c *Client) UpdateResource(ctx context.Context, resourceItem ResourceItem) (*ResourceItem, error) {
 	cloudData := CloudData{
+		StackId:    c.StackId,
 		CloudSpace: c.CloudSpace,
 		Locations:  c.Locations,
 		ResourceItems: []ResourceItem{
@@ -107,7 +109,16 @@ func (c *Client) UpdateResource(ctx context.Context, resourceItem ResourceItem) 
 }
 
 func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s&cloudSpace=%s", c.HostURL, resourceID, c.CloudSpace), nil)
+	cloudData := CloudData{
+		StackId:    c.StackId,
+		CloudSpace: c.CloudSpace,
+		Locations:  c.Locations,
+	}
+	rb, err := json.Marshal(cloudData)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s", c.HostURL, resourceID), io.NopCloser(strings.NewReader(string(rb))))
 	if err != nil {
 		return err
 	}

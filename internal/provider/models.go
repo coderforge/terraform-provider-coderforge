@@ -1,7 +1,7 @@
 package provider
 
 type CloudData struct {
-	Type          string         `json:"type"`
+	StackId       string         `json:"stackId"`
 	CloudSpace    string         `json:"cloudSpace"`
 	Locations     []string       `json:"locations"`
 	ResourceItems []ResourceItem `json:"resourceItems"`

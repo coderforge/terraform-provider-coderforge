@@ -31,6 +31,7 @@ type coderforgeProviderModel struct {
 	Token      types.String   `tfsdk:"token"`
 	CloudSpace types.String   `tfsdk:"cloud_space"`
 	Locations  []types.String `tfsdk:"locations"`
+	StackId    types.String   `tfsdk:"stack_id"`
 }
 
 // coderforgeProvider is the provider implementation.
@@ -61,6 +62,9 @@ func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 			"locations": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
+			},
+			"stack_id": schema.StringAttribute{
+				Optional: true,
 			},
 		},
 	}
@@ -109,6 +113,7 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	var cloudSpace = config.CloudSpace.ValueString()
+	var stackId = config.StackId.ValueString()
 
 	ctx = tflog.SetField(ctx, "coderforge_cloud_token", token)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "coderforge_password")
@@ -121,7 +126,7 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	// Create a new CoderForge.org client using the configuration values
-	client, err := NewClient(&token, &cloudSpace, &locations)
+	client, err := NewClient(&token, &cloudSpace, &locations, &stackId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create CoderForge.org API Client",

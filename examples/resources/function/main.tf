@@ -8,7 +8,8 @@ terraform {
 }
 
 provider "coderforge" {
-  cloud_space = "ledger.dev.coderforge.org"
+  stack_id = "stack-helloworld-dev"
+  cloud_space = "helloworld.dev.coderforge.org"
   locations = ["gbr-1", "gbr-2"]
 }
 
@@ -23,5 +24,5 @@ resource "coderforge_function" "helloWorldFunction" {
 }
 
 output "func1_function" {
-  value = coderforge_function.func1
+  value = coderforge_function.helloWorldFunction
 }
