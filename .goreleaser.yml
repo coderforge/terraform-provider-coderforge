@@ -1,37 +1,37 @@
-# Visit https://goreleaser.com for documentation on how to customize this
-# behavior.
+version: 2
+project_name: terraform-provider-coderforge
 before:
   hooks:
-    # this is just an example and not a requirement for provider building/publishing
     - go mod tidy
+    - go mod download
 builds:
-- env:
-    # goreleaser does not work with CGO, it could also complicate
-    # usage by users in CI/CD systems like Terraform Cloud where
-    # they are unable to install libraries.
-    - CGO_ENABLED=0
-  mod_timestamp: '{{ .CommitTimestamp }}'
-  flags:
-    - -trimpath
-  ldflags:
-    - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
-  goos:
-    - freebsd
-    - windows
-    - linux
-    - darwin
-  goarch:
-    - amd64
-    - '386'
-    - arm
-    - arm64
-  ignore:
-    - goos: darwin
-      goarch: '386'
-  binary: '{{ .ProjectName }}_v{{ .Version }}'
+  - env:
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - -w -s -X coderforge.org/terraform-provider-coderforge/cmd.version={{.Tag}} -X coderforge.org/terraform-provider-coderforge/cmd.commit={{.Commit}} -X coderforge.org/terraform-provider-coderforge/cmd.date={{.Date}}
+    goos:
+      - freebsd
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - '386'
+      - arm
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: '386'
+    binary: '{{ .ProjectName }}_v{{ .Version }}'
 archives:
-- format: zip
-  name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+  - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format: zip
+    files:
+      - README.md
+      - LICENSE
 checksum:
   extra_files:
     - glob: 'terraform-registry-manifest.json'
@@ -41,20 +41,24 @@ checksum:
 signs:
   - artifacts: checksum
     args:
-      # if you are using this in a GitHub action or some other automated pipeline, you 
-      # need to pass the batch flag to indicate its not interactive.
       - "--batch"
       - "--local-user"
-      - "{{ .Env.GPG_FINGERPRINT }}" # set this environment variable for your signing key
+      - "{{ .Env.GPG_FINGERPRINT }}"
       - "--output"
       - "${signature}"
       - "--detach-sign"
       - "${artifact}"
+changelog:
+  disable: true
 release:
+  github:
+    owner: coderforge
+    name: terraform-provider-coderforge
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
-  # If you want to manually examine the release before its live, uncomment this line:
-  # draft: true
-changelog:
-  skip: true
+  draft: false
+  prerelease: auto
+  header: |
+
+  footer: |
