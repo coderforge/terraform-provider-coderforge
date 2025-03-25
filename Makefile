@@ -1,5 +1,5 @@
 ifndef VERSION
-	VERSION = 'v0.0.1'
+	VERSION = 'v0.1.2'
 endif
 
 .PHONY: build
@@ -9,7 +9,7 @@ build: build-only
 build-only:
 	go mod tidy
 	go mod download
-	go build -o terraform-provider-contabo_$(VERSION)
+	go build -o terraform-provider-coderforge_$(VERSION)
 
 .PHONY: doc-preview
 doc-preview:
