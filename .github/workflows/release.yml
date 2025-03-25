@@ -37,12 +37,6 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
       -
-        name: Build openapi client
-        run: make generate-api-clients
-        env:
-          OPENAPIVOLUME: "openapivolume:/local"
-          OUTPUTLOCATION: "/local/"
-      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
