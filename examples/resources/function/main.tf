@@ -1,16 +1,16 @@
 terraform {
   required_providers {
     coderforge = {
-      source = "terraform.coderforge.org/coderforge/coderforge"
+      source = "coderforge/coderforge"
+      version = "0.1.2"
     }
   }
-  required_version = ">= 0.1.0"
 }
 
 provider "coderforge" {
   stack_id = "stack-helloworld-dev"
   cloud_space = "helloworld.dev.coderforge.org"
-  locations = ["gbr-1", "gbr-2"]
+  locations = ["gbr-1", "gbr-2", "ita-1"]
 }
 
 resource "coderforge_function" "helloWorldFunction" {

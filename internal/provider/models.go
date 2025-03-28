@@ -11,7 +11,7 @@ type CloudData struct {
 type ResourceItem struct {
 	ID                    string `json:"id,omitempty"`
 	Type                  string `json:"type"`
-	FunctionName          string `json:"functionName,omitempty"`
+	Name                  string `json:"name,omitempty"`
 	Code                  Code   `json:"code,omitempty"`
 	Timeout               int64  `json:"timeout,omitempty"`
 	Protocol              string `json:"protocol,omitempty"`
@@ -25,6 +25,7 @@ type ResourceItem struct {
 type Code struct {
 	PackageType string `json:"packageType"`
 	ImageUri    string `json:"imageUri,omitempty"`
+	Runtime     string `json:"runtime,omitempty"`
 }
 
 type DataItem struct {

@@ -11,66 +11,52 @@ import (
 )
 
 var (
-	_ resource.Resource              = &functionResource{}
-	_ resource.ResourceWithConfigure = &functionResource{}
+	_ resource.Resource              = &containerResource{}
+	_ resource.ResourceWithConfigure = &containerResource{}
 )
 
-func NewFunctionResource() resource.Resource {
-	return &functionResource{}
+func NewContainerResource() resource.Resource {
+	return &containerResource{}
 }
 
-type functionResourceModel struct {
-	ID           types.String      `tfsdk:"id"`
-	FunctionName types.String      `tfsdk:"function_name"`
-	Code         functionCodeModel `tfsdk:"code"`
-	Timeout      types.Int64       `tfsdk:"timeout"`
-	MaxRamSize   types.String      `tfsdk:"max_ram_size"`
-	LastUpdated  types.String      `tfsdk:"last_updated"`
-}
-
-type functionCodeModel struct {
-	PackageType types.String `tfsdk:"package_type"`
-	ImageUri    types.String `tfsdk:"image_uri"`
+type containerResourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
 	Runtime     types.String `tfsdk:"runtime"`
+	ImageUri    types.String `tfsdk:"image_uri"`
+	Timeout     types.Int64  `tfsdk:"timeout"`
+	MaxRamSize  types.String `tfsdk:"max_ram_size"`
+	LastUpdated types.String `tfsdk:"last_updated"`
 }
 
-type functionResource struct {
+type containerResource struct {
 	client *Client
 }
 
-func (r *functionResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_function"
+func (r *containerResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_container"
 }
 
-func (r *functionResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *containerResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"function_name": schema.StringAttribute{
-				Computed: false,
-				Required: true,
-			},
 			"last_updated": schema.StringAttribute{
 				Computed: true,
 			},
-			"code": schema.SingleNestedAttribute{
+			"name": schema.StringAttribute{
+				Computed: false,
+				Optional: true,
+			},
+			"image_uri": schema.StringAttribute{
+				Computed: false,
+				Optional: true,
+			},
+			"runtime": schema.StringAttribute{
+				Computed: false,
 				Required: true,
-				Attributes: map[string]schema.Attribute{
-					"package_type": schema.StringAttribute{
-						Computed: false,
-						Required: true,
-					},
-					"image_uri": schema.StringAttribute{
-						Computed: false,
-						Optional: true,
-					},
-					"runtime": schema.StringAttribute{
-						Computed: false,
-						Optional: true,
-					},
-				},
 			},
 			"timeout": schema.Int64Attribute{
 				Computed: false,
@@ -85,9 +71,9 @@ func (r *functionResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 }
 
 // Create a new resource.
-func (r *functionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *containerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var plan functionResourceModel
+	var plan containerResourceModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -96,12 +82,11 @@ func (r *functionResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Generate API request body from plan
 	var resourceItem ResourceItem
-	resourceItem.Type = "function"
-	resourceItem.Name = plan.FunctionName.ValueString()
+	resourceItem.Type = "container"
+	resourceItem.Name = plan.Name.ValueString()
 	code := Code{
-		PackageType: plan.Code.PackageType.ValueString(),
-		ImageUri:    plan.Code.ImageUri.ValueString(),
-		Runtime:     plan.Code.Runtime.ValueString(),
+		ImageUri: plan.ImageUri.ValueString(),
+		Runtime:  plan.Runtime.ValueString(),
 	}
 	resourceItem.Code = code
 	resourceItem.Timeout = plan.Timeout.ValueInt64()
@@ -117,14 +102,9 @@ func (r *functionResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(resourceItemRes.ID)
-	plan.FunctionName = types.StringValue(resourceItemRes.Name)
-	if &resourceItemRes.Code != nil {
-		plan.Code = functionCodeModel{
-			PackageType: types.StringValue(resourceItemRes.Code.PackageType),
-			ImageUri:    types.StringValue(resourceItemRes.Code.ImageUri),
-			Runtime:     types.StringValue(resourceItemRes.Code.Runtime),
-		}
-	}
+	plan.Name = types.StringValue(resourceItemRes.Name)
+	plan.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
+	plan.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
 	plan.Timeout = types.Int64Value(resourceItemRes.Timeout)
 	plan.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
@@ -137,8 +117,8 @@ func (r *functionResource) Create(ctx context.Context, req resource.CreateReques
 }
 
 // Read resource information.
-func (r *functionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state functionResourceModel
+func (r *containerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state containerResourceModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -155,12 +135,11 @@ func (r *functionResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 	state.ID = types.StringValue(resourceItemRes.ID)
-	state.FunctionName = types.StringValue(resourceItemRes.Name)
-	state.Code.PackageType = types.StringValue(resourceItemRes.Code.PackageType)
-	state.Code.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
-	state.Code.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
-	state.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
+	state.Name = types.StringValue(resourceItemRes.Name)
+	state.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
+	state.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
 	state.Timeout = types.Int64Value(resourceItemRes.Timeout)
+	state.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -169,27 +148,27 @@ func (r *functionResource) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *functionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan functionResourceModel
+func (r *containerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan containerResourceModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
-	var state functionResourceModel
+	var state containerResourceModel
 	diagsState := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diagsState...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	var resourceItem ResourceItem
-	resourceItem.Type = "function"
-	resourceItem.Name = plan.FunctionName.ValueString()
+	resourceItem.ID = state.ID.ValueString()
+	resourceItem.Type = "container"
+	resourceItem.Name = plan.Name.ValueString()
 	code := Code{
-		PackageType: plan.Code.PackageType.ValueString(),
-		ImageUri:    plan.Code.ImageUri.ValueString(),
+		ImageUri: plan.ImageUri.ValueString(),
+		Runtime:  plan.Runtime.ValueString(),
 	}
 	resourceItem.Code = code
 	resourceItem.Timeout = plan.Timeout.ValueInt64()
 	resourceItem.MaxRamSize = plan.MaxRamSize.ValueString()
-	resourceItem.ID = state.ID.ValueString()
 	resourceItemRes, err := r.client.UpdateResource(ctx, resourceItem)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -199,16 +178,11 @@ func (r *functionResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 	plan.ID = types.StringValue(resourceItemRes.ID)
-	plan.FunctionName = types.StringValue(resourceItemRes.Name)
-	if &resourceItemRes.Code != nil {
-		plan.Code = functionCodeModel{
-			PackageType: types.StringValue(resourceItemRes.Code.PackageType),
-			ImageUri:    types.StringValue(resourceItemRes.Code.ImageUri),
-			Runtime:     types.StringValue(resourceItemRes.Code.Runtime),
-		}
-	}
-	plan.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
-	plan.Timeout = types.Int64Value(resourceItemRes.Timeout)
+	state.Name = types.StringValue(resourceItemRes.Name)
+	state.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
+	state.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
+	state.Timeout = types.Int64Value(resourceItemRes.Timeout)
+	state.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -219,9 +193,9 @@ func (r *functionResource) Update(ctx context.Context, req resource.UpdateReques
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *functionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *containerResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Retrieve values from plan
-	var plan functionResourceModel
+	var plan containerResourceModel
 	diags := req.State.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -239,7 +213,7 @@ func (r *functionResource) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *functionResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *containerResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Add a nil check when handling ProviderData because Terraform
 	// sets that data after it calls the ConfigureProvider RPC.
 	if req.ProviderData == nil {
