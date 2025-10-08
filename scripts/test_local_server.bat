@@ -77,24 +77,21 @@ REM Environment for Terraform CLI
 set "CODERFORGE_API_URL=%HOST_URL%"
 set "CODERFORGE_CLOUD_TOKEN=%TOKEN%"
 
-REM Build a per-run Terraform CLI config with correct override path
-set "OVERRIDE_PATH=%ROOT_DIR%"
-set "OVERRIDE_PATH=%OVERRIDE_PATH:\=/%"
+REM Build a per-run Terraform CLI config with correct override path (Windows-safe)
 set "TF_CLI_CONFIG_FILE=%ROOT_DIR%\.terraformrc.dev"
-(
-  >"%TF_CLI_CONFIG_FILE%" echo provider_installation {
-  >>"%TF_CLI_CONFIG_FILE%" echo   dev_overrides {
-  >>"%TF_CLI_CONFIG_FILE%" echo     "registry.terraform.io/coderforge/coderforge" = "%OVERRIDE_PATH%"
-  >>"%TF_CLI_CONFIG_FILE%" echo   }
-  >>"%TF_CLI_CONFIG_FILE%" echo   direct {}
-  >>"%TF_CLI_CONFIG_FILE%" echo }
-)
+echo provider_installation {>"%TF_CLI_CONFIG_FILE%"
+echo   dev_overrides {>>"%TF_CLI_CONFIG_FILE%"
+echo     "registry.terraform.io/coderforge/coderforge" = "%ROOT_DIR%">>"%TF_CLI_CONFIG_FILE%"
+echo   }>>"%TF_CLI_CONFIG_FILE%"
+echo   direct {}>>"%TF_CLI_CONFIG_FILE%"
+echo }>>"%TF_CLI_CONFIG_FILE%"
 
 echo Building dev provider ...
 pushd "%ROOT_DIR%" >nul
 if not exist registry.terraform.io mkdir registry.terraform.io >nul 2>nul
 if not exist registry.terraform.io\coderforge mkdir registry.terraform.io\coderforge >nul 2>nul
-go build -o registry.terraform.io\coderforge\terraform-provider-coderforge.exe
+if not exist registry.terraform.io\coderforge\coderforge mkdir registry.terraform.io\coderforge\coderforge >nul 2>nul
+go build -o registry.terraform.io\coderforge\coderforge\terraform-provider-coderforge.exe
 if errorlevel 1 (
   popd >nul
   exit /b 1
