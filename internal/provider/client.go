@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const HostURL string = "https://api.coderforge.org"
+const defaultHostURL string = "https://api.coderforge.org"
 
 var ErrNotFound = errors.New("not_found")
 
@@ -22,10 +22,14 @@ type Client struct {
 	Locations  []string
 }
 
-func NewClient(token *string, cloudSpace *string, locations *[]string, stackId *string) (*Client, error) {
+func NewClient(token *string, cloudSpace *string, locations *[]string, stackId *string, hostURL *string) (*Client, error) {
+	host := defaultHostURL
+	if hostURL != nil && *hostURL != "" {
+		host = *hostURL
+	}
 	c := Client{
 		StackId:    *stackId,
-		HostURL:    HostURL,
+		HostURL:    host,
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		Token:      *token,
 		CloudSpace: *cloudSpace,

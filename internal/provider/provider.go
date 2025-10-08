@@ -32,6 +32,7 @@ type coderforgeProviderModel struct {
 	CloudSpace types.String   `tfsdk:"cloud_space"`
 	Locations  []types.String `tfsdk:"locations"`
 	StackId    types.String   `tfsdk:"stack_id"`
+    HostURL    types.String   `tfsdk:"host_url"`
 }
 
 // coderforgeProvider is the provider implementation.
@@ -66,6 +67,9 @@ func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 			"stack_id": schema.StringAttribute{
 				Optional: true,
 			},
+            "host_url": schema.StringAttribute{
+                Optional: true,
+            },
 		},
 	}
 }
@@ -114,6 +118,19 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 
     var cloudSpace = config.CloudSpace.ValueString()
     var stackId = config.StackId.ValueString()
+    var hostURLStr string
+    if !config.HostURL.IsNull() && !config.HostURL.IsUnknown() {
+        hostURLStr = config.HostURL.ValueString()
+    }
+    if hostURLStr == "" {
+        // Allow environment variable override for local/dev testing
+        // Prefer CODERFORGE_API_URL, then CODERFORGE_HOST
+        if v := os.Getenv("CODERFORGE_API_URL"); v != "" {
+            hostURLStr = v
+        } else if v := os.Getenv("CODERFORGE_HOST"); v != "" {
+            hostURLStr = v
+        }
+    }
 
     // Never log tokens; mask any potential fields
     ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token", "coderforge_token", "coderforge_cloud_token")
@@ -125,8 +142,12 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 		locations = append(locations, location.ValueString())
 	}
 
-	// Create a new CoderForge.org client using the configuration values
-	client, err := NewClient(&token, &cloudSpace, &locations, &stackId)
+    // Create a new CoderForge.org client using the configuration values
+    var hostOverride *string
+    if hostURLStr != "" {
+        hostOverride = &hostURLStr
+    }
+    client, err := NewClient(&token, &cloudSpace, &locations, &stackId, hostOverride)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create CoderForge.org API Client",
