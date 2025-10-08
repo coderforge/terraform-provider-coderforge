@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -125,13 +126,20 @@ func (r *containerResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	// Get refreshed order value from HashiCups
 	resourceItemRes, err := r.client.GetResource(ctx, state.ID.ValueString())
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error Reading Resource",
 			"Could not read resource ID "+state.ID.ValueString()+": "+err.Error(),
 		)
+		return
+	}
+	if resourceItemRes == nil {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 	state.ID = types.StringValue(resourceItemRes.ID)
@@ -172,17 +180,17 @@ func (r *containerResource) Update(ctx context.Context, req resource.UpdateReque
 	resourceItemRes, err := r.client.UpdateResource(ctx, resourceItem)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating order",
-			"Could not create order, unexpected error: "+err.Error(),
+			"Error updating resource",
+			"Could not update resource, unexpected error: "+err.Error(),
 		)
 		return
 	}
 	plan.ID = types.StringValue(resourceItemRes.ID)
-	state.Name = types.StringValue(resourceItemRes.Name)
-	state.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
-	state.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
-	state.Timeout = types.Int64Value(resourceItemRes.Timeout)
-	state.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
+	plan.Name = types.StringValue(resourceItemRes.Name)
+	plan.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
+	plan.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
+	plan.Timeout = types.Int64Value(resourceItemRes.Timeout)
+	plan.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -224,8 +232,8 @@ func (r *containerResource) Configure(_ context.Context, req resource.ConfigureR
 
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *hashicups.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *provider.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return

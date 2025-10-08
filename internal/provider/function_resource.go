@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -115,16 +116,14 @@ func (r *functionResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
+    // Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(resourceItemRes.ID)
 	plan.FunctionName = types.StringValue(resourceItemRes.Name)
-	if &resourceItemRes.Code != nil {
-		plan.Code = functionCodeModel{
-			PackageType: types.StringValue(resourceItemRes.Code.PackageType),
-			ImageUri:    types.StringValue(resourceItemRes.Code.ImageUri),
-			Runtime:     types.StringValue(resourceItemRes.Code.Runtime),
-		}
-	}
+    plan.Code = functionCodeModel{
+        PackageType: types.StringValue(resourceItemRes.Code.PackageType),
+        ImageUri:    types.StringValue(resourceItemRes.Code.ImageUri),
+        Runtime:     types.StringValue(resourceItemRes.Code.Runtime),
+    }
 	plan.Timeout = types.Int64Value(resourceItemRes.Timeout)
 	plan.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
@@ -145,15 +144,22 @@ func (r *functionResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	// Get refreshed order value from HashiCups
-	resourceItemRes, err := r.client.GetResource(ctx, state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading Resource",
-			"Could not read resource ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
+    resourceItemRes, err := r.client.GetResource(ctx, state.ID.ValueString())
+    if err != nil {
+        if errors.Is(err, ErrNotFound) {
+            resp.State.RemoveResource(ctx)
+            return
+        }
+        resp.Diagnostics.AddError(
+            "Error Reading Resource",
+            "Could not read resource ID "+state.ID.ValueString()+": "+err.Error(),
+        )
+        return
+    }
+    if resourceItemRes == nil {
+        resp.State.RemoveResource(ctx)
+        return
+    }
 	state.ID = types.StringValue(resourceItemRes.ID)
 	state.FunctionName = types.StringValue(resourceItemRes.Name)
 	state.Code.PackageType = types.StringValue(resourceItemRes.Code.PackageType)
@@ -182,31 +188,30 @@ func (r *functionResource) Update(ctx context.Context, req resource.UpdateReques
 	var resourceItem ResourceItem
 	resourceItem.Type = "function"
 	resourceItem.Name = plan.FunctionName.ValueString()
-	code := Code{
-		PackageType: plan.Code.PackageType.ValueString(),
-		ImageUri:    plan.Code.ImageUri.ValueString(),
-	}
+    code := Code{
+        PackageType: plan.Code.PackageType.ValueString(),
+        ImageUri:    plan.Code.ImageUri.ValueString(),
+        Runtime:     plan.Code.Runtime.ValueString(),
+    }
 	resourceItem.Code = code
 	resourceItem.Timeout = plan.Timeout.ValueInt64()
 	resourceItem.MaxRamSize = plan.MaxRamSize.ValueString()
 	resourceItem.ID = state.ID.ValueString()
 	resourceItemRes, err := r.client.UpdateResource(ctx, resourceItem)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating order",
-			"Could not create order, unexpected error: "+err.Error(),
-		)
-		return
-	}
+    if err != nil {
+        resp.Diagnostics.AddError(
+            "Error updating resource",
+            "Could not update resource, unexpected error: "+err.Error(),
+        )
+        return
+    }
 	plan.ID = types.StringValue(resourceItemRes.ID)
 	plan.FunctionName = types.StringValue(resourceItemRes.Name)
-	if &resourceItemRes.Code != nil {
-		plan.Code = functionCodeModel{
-			PackageType: types.StringValue(resourceItemRes.Code.PackageType),
-			ImageUri:    types.StringValue(resourceItemRes.Code.ImageUri),
-			Runtime:     types.StringValue(resourceItemRes.Code.Runtime),
-		}
-	}
+    plan.Code = functionCodeModel{
+        PackageType: types.StringValue(resourceItemRes.Code.PackageType),
+        ImageUri:    types.StringValue(resourceItemRes.Code.ImageUri),
+        Runtime:     types.StringValue(resourceItemRes.Code.Runtime),
+    }
 	plan.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
 	plan.Timeout = types.Int64Value(resourceItemRes.Timeout)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
@@ -250,8 +255,8 @@ func (r *functionResource) Configure(_ context.Context, req resource.ConfigureRe
 
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *hashicups.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *provider.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return

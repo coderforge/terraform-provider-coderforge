@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v go >/dev/null 2>&1; then
+  echo "go not found; skipping build/validate." >&2
+  exit 0
+fi
+
+# Build provider
+go build -o terraform.coderforge.org/coderforge/coderforge || exit 1
+
+# Terraform optional
+if command -v terraform >/dev/null 2>&1; then
+  export TF_CLI_CONFIG_FILE="$(git rev-parse --show-toplevel)/.terraformrc"
+  (cd examples/resources/function && terraform init -input=false -upgrade && terraform validate)
+  (cd examples/resources/container_registry && terraform init -input=false -upgrade && terraform validate)
+else
+  echo "terraform not found; skipping terraform validate." >&2
+fi
