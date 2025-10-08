@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	_ resource.Resource              = &containerResource{}
-	_ resource.ResourceWithConfigure = &containerResource{}
+	_ resource.Resource              = &containerRegistryResource{}
+	_ resource.ResourceWithConfigure = &containerRegistryResource{}
 )
 
-func NewContainerResource() resource.Resource {
-	return &containerResource{}
+func NewContainerRegistryResource() resource.Resource {
+	return &containerRegistryResource{}
 }
 
-type containerResourceModel struct {
+type containerRegistryResourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Runtime     types.String `tfsdk:"runtime"`
@@ -30,15 +30,15 @@ type containerResourceModel struct {
 	LastUpdated types.String `tfsdk:"last_updated"`
 }
 
-type containerResource struct {
+type containerRegistryResource struct {
 	client *Client
 }
 
-func (r *containerResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_container"
+func (r *containerRegistryResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_container_registry"
 }
 
-func (r *containerResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *containerRegistryResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -72,9 +72,9 @@ func (r *containerResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 }
 
 // Create a new resource.
-func (r *containerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *containerRegistryResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var plan containerResourceModel
+	var plan containerRegistryResourceModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -118,8 +118,8 @@ func (r *containerResource) Create(ctx context.Context, req resource.CreateReque
 }
 
 // Read resource information.
-func (r *containerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state containerResourceModel
+func (r *containerRegistryResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state containerRegistryResourceModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -156,11 +156,11 @@ func (r *containerResource) Read(ctx context.Context, req resource.ReadRequest, 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *containerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan containerResourceModel
+func (r *containerRegistryResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan containerRegistryResourceModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
-	var state containerResourceModel
+	var state containerRegistryResourceModel
 	diagsState := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diagsState...)
 	if resp.Diagnostics.HasError() {
@@ -201,9 +201,9 @@ func (r *containerResource) Update(ctx context.Context, req resource.UpdateReque
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *containerResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *containerRegistryResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Retrieve values from plan
-	var plan containerResourceModel
+	var plan containerRegistryResourceModel
 	diags := req.State.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -221,7 +221,7 @@ func (r *containerResource) Delete(ctx context.Context, req resource.DeleteReque
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *containerResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *containerRegistryResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Add a nil check when handling ProviderData because Terraform
 	// sets that data after it calls the ConfigureProvider RPC.
 	if req.ProviderData == nil {
@@ -241,3 +241,4 @@ func (r *containerResource) Configure(_ context.Context, req resource.ConfigureR
 
 	r.client = client
 }
+
