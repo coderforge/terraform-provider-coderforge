@@ -1,15 +1,15 @@
 package provider
 
 import (
-    "context"
-    "github.com/hashicorp/terraform-plugin-framework/datasource"
-    "github.com/hashicorp/terraform-plugin-framework/path"
-    "github.com/hashicorp/terraform-plugin-framework/provider"
-    "github.com/hashicorp/terraform-plugin-framework/provider/schema"
-    "github.com/hashicorp/terraform-plugin-framework/resource"
-    "github.com/hashicorp/terraform-plugin-framework/types"
-    "github.com/hashicorp/terraform-plugin-log/tflog"
-    "os"
+	"context"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"os"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -71,7 +71,7 @@ func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 }
 
 func (p *coderforgeProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-    tflog.Info(ctx, "Configuring CoderForge.org client")
+	tflog.Info(ctx, "Configuring CoderForge.org client")
 
 	// Retrieve provider data from configuration
 	var config coderforgeProviderModel
@@ -103,8 +103,8 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
     if config.CloudSpace.IsNull() || config.CloudSpace.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("cloud_space"),
-            "Missing CoderForge.org cloud_space",
-            "The provider cannot create the CoderForge.org API client because cloud_space is missing. Set cloud_space in the provider configuration.",
+			"Missing CoderForge.org cloud_space",
+			"The provider cannot create the CoderForge.org API client because cloud_space is missing. Set cloud_space in the provider configuration.",
 		)
 	}
 
@@ -153,6 +153,7 @@ func (p *coderforgeProvider) DataSources(_ context.Context) []func() datasource.
 // Resources defines the resources implemented in the provider.
 func (p *coderforgeProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewFunctionResource,
+        NewFunctionResource,
+        NewContainerResource,
 	}
 }

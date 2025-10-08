@@ -1,15 +1,17 @@
 package provider
 
 import (
-    "context"
-    "errors"
-    "fmt"
-    "io"
-    "net/http"
-    "time"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
 )
 
 const HostURL string = "https://api.coderforge.org"
+
+var ErrNotFound = errors.New("not_found")
 
 type Client struct {
 	StackId    string
@@ -33,16 +35,16 @@ func NewClient(token *string, cloudSpace *string, locations *[]string, stackId *
 }
 
 func (c *Client) doRequest(ctx context.Context, req *http.Request) ([]byte, error) {
-    if ctx == nil {
-        ctx = context.Background()
-    }
-    req = req.WithContext(ctx)
-    if c.Token != "" {
-        req.Header.Set("Authorization", "Bearer "+c.Token)
-    }
-    req.Header.Set("X-CoderForge.org-Context", "{\"userId\": \"u00001\"}")
-    req.Header.Set("Content-Type", "application/json")
-    res, err := c.HTTPClient.Do(req)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	req = req.WithContext(ctx)
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+	req.Header.Set("X-CoderForge.org-Context", "{\"userId\": \"u00001\"}")
+	req.Header.Set("Content-Type", "application/json")
+	res, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +59,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) ([]byte, erro
 
     if res.StatusCode < 200 || res.StatusCode >= 300 {
         if res.StatusCode == http.StatusNotFound {
-            return nil, errors.New("not_found")
+            return nil, ErrNotFound
         }
         return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, body)
     }

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,15 +11,18 @@ import (
 )
 
 func (c *Client) GetResource(ctx context.Context, resourceID string) (*ResourceItem, error) {
-    req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s&cloudSpace=%s", c.HostURL, resourceID, c.CloudSpace), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s&cloudSpace=%s", c.HostURL, resourceID, c.CloudSpace), nil)
 	if err != nil {
 		return nil, err
 	}
 
     body, err := c.doRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
+    if err != nil {
+        if errors.Is(err, ErrNotFound) {
+            return nil, ErrNotFound
+        }
+        return nil, err
+    }
 
 	cloudData := CloudData{}
 	err = json.Unmarshal(body, &cloudData)
@@ -28,11 +32,11 @@ func (c *Client) GetResource(ctx context.Context, resourceID string) (*ResourceI
 
 	resourceItems := &cloudData.ResourceItems
 
-	if len(*resourceItems) > 0 {
-		return &(*resourceItems)[0], nil
-	}
+    if len(*resourceItems) > 0 {
+        return &(*resourceItems)[0], nil
+    }
 
-	return nil, nil
+    return nil, ErrNotFound
 }
 
 func (c *Client) CreateResource(ctx context.Context, resourceItem ResourceItem) (*ResourceItem, error) {
@@ -50,7 +54,7 @@ func (c *Client) CreateResource(ctx context.Context, resourceItem ResourceItem) 
 		return nil, err
 	}
 
-    req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +92,7 @@ func (c *Client) UpdateResource(ctx context.Context, resourceItem ResourceItem) 
 	if err != nil {
 		return nil, err
 	}
-    req, err := http.NewRequest("PUT", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +122,7 @@ func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
 	if err != nil {
 		return err
 	}
-    req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s", c.HostURL, resourceID), io.NopCloser(strings.NewReader(string(rb))))
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s", c.HostURL, resourceID), io.NopCloser(strings.NewReader(string(rb))))
 	if err != nil {
 		return err
 	}
