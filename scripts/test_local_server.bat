@@ -66,7 +66,7 @@ set "CODERFORGE_CLOUD_TOKEN=%TOKEN%"
 
 echo Building dev provider ...
 pushd "%ROOT_DIR%" >nul
-go build -o terraform.coderforge.org\coderforge\coderforge
+go build -o registry.terraform.io\coderforge\coderforge
 if errorlevel 1 (
   popd >nul
   exit /b 1

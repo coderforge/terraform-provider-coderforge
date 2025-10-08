@@ -60,7 +60,7 @@ export CODERFORGE_CLOUD_TOKEN="${TOKEN}"
 echo "Building dev provider ..."
 (
   cd "${ROOT_DIR}"
-  go build -o terraform.coderforge.org/coderforge/coderforge
+  go build -o registry.terraform.io/coderforge/coderforge
 )
 
 run_example() {

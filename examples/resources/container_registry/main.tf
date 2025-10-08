@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     coderforge = {
-      source = "terraform.coderforge.org/coderforge/coderforge"
+      source = "registry.terraform.io/coderforge/coderforge"
     }
   }
 }

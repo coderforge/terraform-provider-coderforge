@@ -13,7 +13,7 @@ build-only:
 
 .PHONY: build-dev
 build-dev:
-	go build -o terraform.coderforge.org/coderforge/coderforge
+	go build -o registry.terraform.io/coderforge/coderforge
 
 .PHONY: validate-examples
 validate-examples: build-dev
