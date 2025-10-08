@@ -42,10 +42,24 @@ exit /b 1
 
 :after_parse
 
-REM Resolve repo root from script location
-set "SCRIPT_DIR=%~dp0"
-if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-for %%I in ("%SCRIPT_DIR%\..") do set "ROOT_DIR=%%~fI"
+REM Resolve repo root: prefer git, else script dir parent, else CWD
+set "ROOT_DIR="
+where git >nul 2>nul
+if not errorlevel 1 (
+  for /f "usebackq delims=" %%G in (`git rev-parse --show-toplevel 2^>nul`) do set "ROOT_DIR=%%G"
+)
+if "%ROOT_DIR%"=="" (
+  set "SCRIPT_DIR=%~dp0"
+  if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+  for %%I in ("%SCRIPT_DIR%\..") do set "ROOT_DIR=%%~fI"
+)
+if not exist "%ROOT_DIR%\go.mod" (
+  set "ROOT_DIR=%CD%"
+)
+if not exist "%ROOT_DIR%\go.mod" (
+  echo ERROR: could not locate go.mod. Run this script from within the repository.
+  exit /b 3
+)
 
 REM Check dependencies
 where go >nul 2>nul
@@ -66,6 +80,8 @@ set "CODERFORGE_CLOUD_TOKEN=%TOKEN%"
 
 echo Building dev provider ...
 pushd "%ROOT_DIR%" >nul
+if not exist registry.terraform.io mkdir registry.terraform.io >nul 2>nul
+if not exist registry.terraform.io\coderforge mkdir registry.terraform.io\coderforge >nul 2>nul
 go build -o registry.terraform.io\coderforge\coderforge
 if errorlevel 1 (
   popd >nul
