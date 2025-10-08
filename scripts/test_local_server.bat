@@ -46,7 +46,7 @@ REM Resolve repo root: prefer git, else script dir parent, else CWD
 set "ROOT_DIR="
 where git >nul 2>nul
 if not errorlevel 1 (
-  for /f "usebackq delims=" %%G in (`git rev-parse --show-toplevel 2^>nul`) do set "ROOT_DIR=%%G"
+  for /f "delims=" %%G in ('git rev-parse --show-toplevel 2^>nul') do set "ROOT_DIR=%%G"
 )
 if "%ROOT_DIR%"=="" (
   set "SCRIPT_DIR=%~dp0"
@@ -74,15 +74,27 @@ if errorlevel 1 (
 )
 
 REM Environment for Terraform CLI
-set "TF_CLI_CONFIG_FILE=%ROOT_DIR%\.terraformrc"
 set "CODERFORGE_API_URL=%HOST_URL%"
 set "CODERFORGE_CLOUD_TOKEN=%TOKEN%"
+
+REM Build a per-run Terraform CLI config with correct override path
+set "OVERRIDE_PATH=%ROOT_DIR%"
+set "OVERRIDE_PATH=%OVERRIDE_PATH:\=/%"
+set "TF_CLI_CONFIG_FILE=%ROOT_DIR%\.terraformrc.dev"
+(
+  >"%TF_CLI_CONFIG_FILE%" echo provider_installation {
+  >>"%TF_CLI_CONFIG_FILE%" echo   dev_overrides {
+  >>"%TF_CLI_CONFIG_FILE%" echo     "registry.terraform.io/coderforge/coderforge" = "%OVERRIDE_PATH%"
+  >>"%TF_CLI_CONFIG_FILE%" echo   }
+  >>"%TF_CLI_CONFIG_FILE%" echo   direct {}
+  >>"%TF_CLI_CONFIG_FILE%" echo }
+)
 
 echo Building dev provider ...
 pushd "%ROOT_DIR%" >nul
 if not exist registry.terraform.io mkdir registry.terraform.io >nul 2>nul
 if not exist registry.terraform.io\coderforge mkdir registry.terraform.io\coderforge >nul 2>nul
-go build -o registry.terraform.io\coderforge\coderforge
+go build -o registry.terraform.io\coderforge\terraform-provider-coderforge.exe
 if errorlevel 1 (
   popd >nul
   exit /b 1
