@@ -119,16 +119,14 @@ func (r *containerRegistryResource) Create(ctx context.Context, req resource.Cre
 
 // Read resource information.
 func (r *containerRegistryResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state containerResourceModel
-    var _ = state
-    var state2 containerRegistryResourceModel
-    diags := req.State.Get(ctx, &state2)
+    var state containerRegistryResourceModel
+    diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-    resourceItemRes, err := r.client.GetResource(ctx, state2.ID.ValueString())
+    resourceItemRes, err := r.client.GetResource(ctx, state.ID.ValueString())
     if err != nil {
         if errors.Is(err, ErrNotFound) {
             resp.State.RemoveResource(ctx)
@@ -136,7 +134,7 @@ func (r *containerRegistryResource) Read(ctx context.Context, req resource.ReadR
         }
         resp.Diagnostics.AddError(
             "Error Reading Resource",
-            "Could not read resource ID "+state2.ID.ValueString()+": "+err.Error(),
+            "Could not read resource ID "+state.ID.ValueString()+": "+err.Error(),
         )
         return
     }
@@ -144,13 +142,13 @@ func (r *containerRegistryResource) Read(ctx context.Context, req resource.ReadR
         resp.State.RemoveResource(ctx)
         return
     }
-    state2.ID = types.StringValue(resourceItemRes.ID)
-    state2.Name = types.StringValue(resourceItemRes.Name)
-    state2.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
-    state2.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
-    state2.Timeout = types.Int64Value(resourceItemRes.Timeout)
-    state2.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
-    diags = resp.State.Set(ctx, &state2)
+    state.ID = types.StringValue(resourceItemRes.ID)
+    state.Name = types.StringValue(resourceItemRes.Name)
+    state.ImageUri = types.StringValue(resourceItemRes.Code.ImageUri)
+    state.Runtime = types.StringValue(resourceItemRes.Code.Runtime)
+    state.Timeout = types.Int64Value(resourceItemRes.Timeout)
+    state.MaxRamSize = types.StringValue(resourceItemRes.MaxRamSize)
+    diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
