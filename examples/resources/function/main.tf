@@ -1,8 +1,7 @@
 terraform {
   required_providers {
     coderforge = {
-      source = "coderforge/coderforge"
-      version = "0.1.2"
+      source = "terraform.coderforge.org/coderforge/coderforge"
     }
   }
 }
