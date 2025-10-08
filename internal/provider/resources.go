@@ -10,12 +10,12 @@ import (
 )
 
 func (c *Client) GetResource(ctx context.Context, resourceID string) (*ResourceItem, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s&cloudSpace=%s", c.HostURL, resourceID, c.CloudSpace), nil)
+    req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s&cloudSpace=%s", c.HostURL, resourceID, c.CloudSpace), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := c.doRequest(req)
+    body, err := c.doRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +50,12 @@ func (c *Client) CreateResource(ctx context.Context, resourceItem ResourceItem) 
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
+    req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := c.doRequest(req)
+    body, err := c.doRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +88,11 @@ func (c *Client) UpdateResource(ctx context.Context, resourceItem ResourceItem) 
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
+    req, err := http.NewRequest("PUT", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource", c.HostURL), io.NopCloser(strings.NewReader(string(rb))))
 	if err != nil {
 		return nil, err
 	}
-	body, err := c.doRequest(req)
+    body, err := c.doRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -118,11 +118,11 @@ func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s", c.HostURL, resourceID), io.NopCloser(strings.NewReader(string(rb))))
+    req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/1.2/cloud/terraform/resource?resourceId=%s", c.HostURL, resourceID), io.NopCloser(strings.NewReader(string(rb))))
 	if err != nil {
 		return err
 	}
-	body, err := c.doRequest(req)
+    body, err := c.doRequest(ctx, req)
 	if err != nil {
 		return err
 	}

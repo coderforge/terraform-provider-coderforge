@@ -1,15 +1,15 @@
 package provider
 
 import (
-	"context"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/provider"
-	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"os"
+    "context"
+    "github.com/hashicorp/terraform-plugin-framework/datasource"
+    "github.com/hashicorp/terraform-plugin-framework/path"
+    "github.com/hashicorp/terraform-plugin-framework/provider"
+    "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+    "github.com/hashicorp/terraform-plugin-framework/resource"
+    "github.com/hashicorp/terraform-plugin-framework/types"
+    "github.com/hashicorp/terraform-plugin-log/tflog"
+    "os"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -71,7 +71,7 @@ func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 }
 
 func (p *coderforgeProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	tflog.Info(ctx, "Configuring CoderForge.org client")
+    tflog.Info(ctx, "Configuring CoderForge.org client")
 
 	// Retrieve provider data from configuration
 	var config coderforgeProviderModel
@@ -81,30 +81,30 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
-	var token string
+    var token string
+    if !config.Token.IsNull() && !config.Token.IsUnknown() {
+        token = config.Token.ValueString()
+    } else {
+        token = os.Getenv("CODERFORGE_CLOUD_TOKEN")
+        if token == "" {
+            token = os.Getenv("CODERFORGE_TOKEN")
+        }
+    }
 
-	if !config.Token.IsNull() {
-		token = config.Token.ValueString()
-	} else {
-		token = os.Getenv("CODERFORGE_CLOUD_TOKEN")
-	}
+    if token == "" {
+        resp.Diagnostics.AddAttributeError(
+            path.Root("token"),
+            "Missing CoderForge.org API token",
+            "The provider cannot create the CoderForge.org API client because the API token is missing. "+
+                "Set the token in the provider configuration or via the CODERFORGE_CLOUD_TOKEN (preferred) or CODERFORGE_TOKEN environment variable.",
+        )
+    }
 
-	if token == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("token"),
-			"Missing CoderForge.org API API Password",
-			"The provider cannot create the CoderForge.org API API client as there is a missing or empty value for the CoderForge.org API token. "+
-				"Set the token value in the configuration or use the CODERFORGE_PASSWORD environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
-	}
-
-	if config.CloudSpace.IsNull() {
+    if config.CloudSpace.IsNull() || config.CloudSpace.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("cloud_space"),
-			"Missing CoderForge.org API API cloud_space",
-			"The provider cannot create the CoderForge.org API API client as there is a missing or empty value for the CoderForge.org API cloud_space. "+
-				"Set the cloud_space inside the provider.",
+            "Missing CoderForge.org cloud_space",
+            "The provider cannot create the CoderForge.org API client because cloud_space is missing. Set cloud_space in the provider configuration.",
 		)
 	}
 
@@ -112,11 +112,11 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
-	var cloudSpace = config.CloudSpace.ValueString()
-	var stackId = config.StackId.ValueString()
+    var cloudSpace = config.CloudSpace.ValueString()
+    var stackId = config.StackId.ValueString()
 
-	ctx = tflog.SetField(ctx, "coderforge_cloud_token", token)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "coderforge_password")
+    // Never log tokens; mask any potential fields
+    ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token", "coderforge_token", "coderforge_cloud_token")
 
 	tflog.Debug(ctx, "Creating CoderForge.org client")
 
