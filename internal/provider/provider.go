@@ -175,6 +175,9 @@ func (p *coderforgeProvider) DataSources(_ context.Context) []func() datasource.
 func (p *coderforgeProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
         NewFunctionResource,
+        NewContainerResource,
         NewContainerRegistryResource,
+        NewKsResource,
+        NewCsResource,
 	}
 }
