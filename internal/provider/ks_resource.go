@@ -12,48 +12,45 @@ import (
 )
 
 var (
-	_ resource.Resource              = &ecsResource{}
-	_ resource.ResourceWithConfigure = &ecsResource{}
+	_ resource.Resource              = &ksResource{}
+	_ resource.ResourceWithConfigure = &ksResource{}
 )
 
-func NewEcsResource() resource.Resource {
-	return &ecsResource{}
+func NewKsResource() resource.Resource {
+	return &ksResource{}
 }
 
-type ecsResourceModel struct {
+type ksResourceModel struct {
 	ID                    types.String `tfsdk:"id"`
 	ClusterName           types.String `tfsdk:"cluster_name"`
-	ServiceName           types.String `tfsdk:"service_name"`
-	TaskDefinitionFamily  types.String `tfsdk:"task_definition_family"`
-	TaskDefinitionRevision types.String `tfsdk:"task_definition_revision"`
-	DesiredCount          types.Int64  `tfsdk:"desired_count"`
-	LaunchType            types.String `tfsdk:"launch_type"`
-	PlatformVersion       types.String `tfsdk:"platform_version"`
+	Version               types.String `tfsdk:"version"`
 	Region                types.String `tfsdk:"region"`
+	NodeGroupName         types.String `tfsdk:"node_group_name"`
+	NodeInstanceType      types.String `tfsdk:"node_instance_type"`
+	NodeMinSize           types.Int64  `tfsdk:"node_min_size"`
+	NodeMaxSize           types.Int64  `tfsdk:"node_max_size"`
+	NodeDesiredSize       types.Int64  `tfsdk:"node_desired_size"`
 	VpcId                 types.String `tfsdk:"vpc_id"`
 	SubnetIds             types.List   `tfsdk:"subnet_ids"`
 	SecurityGroupIds      types.List   `tfsdk:"security_group_ids"`
-	LoadBalancerArn       types.String `tfsdk:"load_balancer_arn"`
-	TargetGroupArn        types.String `tfsdk:"target_group_arn"`
-	ContainerPort         types.Int64  `tfsdk:"container_port"`
-	ContainerName         types.String `tfsdk:"container_name"`
-	ContainerImage        types.String `tfsdk:"container_image"`
-	ContainerMemory       types.Int64  `tfsdk:"container_memory"`
-	ContainerCpu          types.Int64  `tfsdk:"container_cpu"`
-	EnvironmentVariables  types.Map    `tfsdk:"environment_variables"`
+	EndpointPrivateAccess types.Bool   `tfsdk:"endpoint_private_access"`
+	EndpointPublicAccess  types.Bool   `tfsdk:"endpoint_public_access"`
+	PublicAccessCidrs     types.List   `tfsdk:"public_access_cidrs"`
+	LoggingEnabled        types.Bool   `tfsdk:"logging_enabled"`
+	LogTypes              types.List   `tfsdk:"log_types"`
 	Tags                  types.Map    `tfsdk:"tags"`
 	LastUpdated           types.String `tfsdk:"last_updated"`
 }
 
-type ecsResource struct {
+type ksResource struct {
 	client *Client
 }
 
-func (r *ecsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_ecs"
+func (r *ksResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_ks"
 }
 
-func (r *ecsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *ksResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -62,26 +59,26 @@ func (r *ecsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 			"cluster_name": schema.StringAttribute{
 				Required: true,
 			},
-			"service_name": schema.StringAttribute{
-				Required: true,
-			},
-			"task_definition_family": schema.StringAttribute{
-				Required: true,
-			},
-			"task_definition_revision": schema.StringAttribute{
-				Optional: true,
-			},
-			"desired_count": schema.Int64Attribute{
-				Optional: true,
-			},
-			"launch_type": schema.StringAttribute{
-				Optional: true,
-			},
-			"platform_version": schema.StringAttribute{
+			"version": schema.StringAttribute{
 				Optional: true,
 			},
 			"region": schema.StringAttribute{
 				Required: true,
+			},
+			"node_group_name": schema.StringAttribute{
+				Optional: true,
+			},
+			"node_instance_type": schema.StringAttribute{
+				Optional: true,
+			},
+			"node_min_size": schema.Int64Attribute{
+				Optional: true,
+			},
+			"node_max_size": schema.Int64Attribute{
+				Optional: true,
+			},
+			"node_desired_size": schema.Int64Attribute{
+				Optional: true,
 			},
 			"vpc_id": schema.StringAttribute{
 				Optional: true,
@@ -94,28 +91,20 @@ func (r *ecsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				ElementType: types.StringType,
 				Optional:    true,
 			},
-			"load_balancer_arn": schema.StringAttribute{
+			"endpoint_private_access": schema.BoolAttribute{
 				Optional: true,
 			},
-			"target_group_arn": schema.StringAttribute{
+			"endpoint_public_access": schema.BoolAttribute{
 				Optional: true,
 			},
-			"container_port": schema.Int64Attribute{
+			"public_access_cidrs": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"logging_enabled": schema.BoolAttribute{
 				Optional: true,
 			},
-			"container_name": schema.StringAttribute{
-				Optional: true,
-			},
-			"container_image": schema.StringAttribute{
-				Optional: true,
-			},
-			"container_memory": schema.Int64Attribute{
-				Optional: true,
-			},
-			"container_cpu": schema.Int64Attribute{
-				Optional: true,
-			},
-			"environment_variables": schema.MapAttribute{
+			"log_types": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 			},
@@ -131,9 +120,9 @@ func (r *ecsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 }
 
 // Create a new resource.
-func (r *ecsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *ksResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var plan ecsResourceModel
+	var plan ksResourceModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -142,32 +131,32 @@ func (r *ecsResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	// Generate API request body from plan
 	var resourceItem ResourceItem
-	resourceItem.Type = "ecs"
-	resourceItem.Name = plan.ServiceName.ValueString()
+	resourceItem.Type = "ks"
+	resourceItem.Name = plan.ClusterName.ValueString()
 	
-	// For ECS, we'll store configuration in a simplified way
+	// For KS, we'll store configuration in a simplified way
+	// In a real implementation, you'd want to extend the ResourceItem model
+	// to support more complex configurations
 	code := Code{
-		PackageType: "container",
-		ImageUri:    plan.ContainerImage.ValueString(),
-		Runtime:     plan.LaunchType.ValueString(),
+		PackageType: "kubernetes",
+		Runtime:     plan.Version.ValueString(),
 	}
 	resourceItem.Code = code
-	resourceItem.MaxRamSize = fmt.Sprintf("%d", plan.ContainerMemory.ValueInt64())
+	resourceItem.MaxRamSize = "0" // KS doesn't use RAM size in the same way
 
 	resourceItemRes, err := r.client.CreateResource(ctx, resourceItem)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating ECS service",
-			"Could not create ECS service, unexpected error: "+err.Error(),
+			"Error creating KS cluster",
+			"Could not create KS cluster, unexpected error: "+err.Error(),
 		)
 		return
 	}
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(resourceItemRes.ID)
-	plan.ServiceName = types.StringValue(resourceItemRes.Name)
-	plan.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
-	plan.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
+	plan.ClusterName = types.StringValue(resourceItemRes.Name)
+	plan.Version = types.StringValue(resourceItemRes.Code.Runtime)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	diags = resp.State.Set(ctx, plan)
@@ -178,8 +167,8 @@ func (r *ecsResource) Create(ctx context.Context, req resource.CreateRequest, re
 }
 
 // Read resource information.
-func (r *ecsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ecsResourceModel
+func (r *ksResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state ksResourceModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -193,8 +182,8 @@ func (r *ecsResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 			return
 		}
 		resp.Diagnostics.AddError(
-			"Error Reading ECS Service",
-			"Could not read ECS service ID "+state.ID.ValueString()+": "+err.Error(),
+			"Error Reading KS Cluster",
+			"Could not read KS cluster ID "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
@@ -204,9 +193,8 @@ func (r *ecsResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 	
 	state.ID = types.StringValue(resourceItemRes.ID)
-	state.ServiceName = types.StringValue(resourceItemRes.Name)
-	state.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
-	state.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
+	state.ClusterName = types.StringValue(resourceItemRes.Name)
+	state.Version = types.StringValue(resourceItemRes.Code.Runtime)
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -216,11 +204,11 @@ func (r *ecsResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *ecsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan ecsResourceModel
+func (r *ksResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan ksResourceModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
-	var state ecsResourceModel
+	var state ksResourceModel
 	diagsState := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diagsState...)
 	if resp.Diagnostics.HasError() {
@@ -229,29 +217,27 @@ func (r *ecsResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	
 	var resourceItem ResourceItem
 	resourceItem.ID = state.ID.ValueString()
-	resourceItem.Type = "ecs"
-	resourceItem.Name = plan.ServiceName.ValueString()
+	resourceItem.Type = "ks"
+	resourceItem.Name = plan.ClusterName.ValueString()
 	code := Code{
-		PackageType: "container",
-		ImageUri:    plan.ContainerImage.ValueString(),
-		Runtime:     plan.LaunchType.ValueString(),
+		PackageType: "kubernetes",
+		Runtime:     plan.Version.ValueString(),
 	}
 	resourceItem.Code = code
-	resourceItem.MaxRamSize = fmt.Sprintf("%d", plan.ContainerMemory.ValueInt64())
+	resourceItem.MaxRamSize = "0"
 
 	resourceItemRes, err := r.client.UpdateResource(ctx, resourceItem)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating ECS service",
-			"Could not update ECS service, unexpected error: "+err.Error(),
+			"Error updating KS cluster",
+			"Could not update KS cluster, unexpected error: "+err.Error(),
 		)
 		return
 	}
 	
 	plan.ID = types.StringValue(resourceItemRes.ID)
-	plan.ServiceName = types.StringValue(resourceItemRes.Name)
-	plan.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
-	plan.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
+	plan.ClusterName = types.StringValue(resourceItemRes.Name)
+	plan.Version = types.StringValue(resourceItemRes.Code.Runtime)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 	
 	diags = resp.State.Set(ctx, plan)
@@ -263,9 +249,9 @@ func (r *ecsResource) Update(ctx context.Context, req resource.UpdateRequest, re
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *ecsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *ksResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Retrieve values from plan
-	var plan ecsResourceModel
+	var plan ksResourceModel
 	diags := req.State.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -275,15 +261,15 @@ func (r *ecsResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	err := r.client.DeleteResource(ctx, plan.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error deleting ECS service",
-			"Could not delete ECS service, unexpected error: "+err.Error(),
+			"Error deleting KS cluster",
+			"Could not delete KS cluster, unexpected error: "+err.Error(),
 		)
 	}
 	return
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *ecsResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ksResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Add a nil check when handling ProviderData because Terraform
 	// sets that data after it calls the ConfigureProvider RPC.
 	if req.ProviderData == nil {

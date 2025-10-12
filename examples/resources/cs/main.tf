@@ -7,14 +7,14 @@ terraform {
 }
 
 provider "coderforge" {
-  stack_id    = "stack-ecs-dev"
-  cloud_space = "ecs.dev.coderforge.org"
+  stack_id    = "stack-cs-dev"
+  cloud_space = "cs.dev.coderforge.org"
   locations   = ["us-east-1", "us-west-2"]
 }
 
-resource "coderforge_ecs" "example" {
-  cluster_name            = "my-ecs-cluster"
-  service_name            = "my-ecs-service"
+resource "coderforge_cs" "example" {
+  cluster_name            = "my-cs-cluster"
+  service_name            = "my-cs-service"
   task_definition_family  = "my-task-family"
   task_definition_revision = "1"
   desired_count           = 2
@@ -45,6 +45,6 @@ resource "coderforge_ecs" "example" {
   }
 }
 
-output "ecs_service" {
-  value = coderforge_ecs.example
+output "cs_service" {
+  value = coderforge_cs.example
 }

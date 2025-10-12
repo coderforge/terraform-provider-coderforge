@@ -7,13 +7,13 @@ terraform {
 }
 
 provider "coderforge" {
-  stack_id    = "stack-eks-dev"
-  cloud_space = "eks.dev.coderforge.org"
+  stack_id    = "stack-ks-dev"
+  cloud_space = "ks.dev.coderforge.org"
   locations   = ["us-east-1", "us-west-2"]
 }
 
-resource "coderforge_eks" "example" {
-  cluster_name           = "my-eks-cluster"
+resource "coderforge_ks" "example" {
+  cluster_name           = "my-ks-cluster"
   version               = "1.28"
   region                = "us-east-1"
   node_group_name       = "my-node-group"
@@ -37,6 +37,6 @@ resource "coderforge_eks" "example" {
   }
 }
 
-output "eks_cluster" {
-  value = coderforge_eks.example
+output "ks_cluster" {
+  value = coderforge_ks.example
 }
