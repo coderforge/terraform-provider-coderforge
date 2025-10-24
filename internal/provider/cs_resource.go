@@ -41,6 +41,18 @@ type csResourceModel struct {
 	ContainerMemory       types.Int64  `tfsdk:"container_memory"`
 	ContainerCpu          types.Int64  `tfsdk:"container_cpu"`
 	EnvironmentVariables  types.Map    `tfsdk:"environment_variables"`
+	Secrets               types.Map    `tfsdk:"secrets"`
+	HealthCheckGracePeriod types.Int64  `tfsdk:"health_check_grace_period"`
+	DeploymentConfiguration types.List   `tfsdk:"deployment_configuration"`
+	ServiceRoleArn        types.String `tfsdk:"service_role_arn"`
+	TaskRoleArn           types.String `tfsdk:"task_role_arn"`
+	ExecutionRoleArn      types.String `tfsdk:"execution_role_arn"`
+	ServiceStatus         types.String `tfsdk:"service_status"`
+	TaskStatus            types.String `tfsdk:"task_status"`
+	RunningCount          types.Int64  `tfsdk:"running_count"`
+	PendingCount           types.Int64  `tfsdk:"pending_count"`
+	NetworkMode           types.String `tfsdk:"network_mode"`
+	RequiresCompatibilities types.List   `tfsdk:"requires_compatibilities"`
 	Tags                  types.Map    `tfsdk:"tags"`
 	LastUpdated           types.String `tfsdk:"last_updated"`
 }
@@ -116,6 +128,45 @@ func (r *csResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 				Optional: true,
 			},
 			"environment_variables": schema.MapAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"secrets": schema.MapAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"health_check_grace_period": schema.Int64Attribute{
+				Optional: true,
+			},
+			"deployment_configuration": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"service_role_arn": schema.StringAttribute{
+				Optional: true,
+			},
+			"task_role_arn": schema.StringAttribute{
+				Optional: true,
+			},
+			"execution_role_arn": schema.StringAttribute{
+				Optional: true,
+			},
+			"service_status": schema.StringAttribute{
+				Computed: true,
+			},
+			"task_status": schema.StringAttribute{
+				Computed: true,
+			},
+			"running_count": schema.Int64Attribute{
+				Computed: true,
+			},
+			"pending_count": schema.Int64Attribute{
+				Computed: true,
+			},
+			"network_mode": schema.StringAttribute{
+				Optional: true,
+			},
+			"requires_compatibilities": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 			},

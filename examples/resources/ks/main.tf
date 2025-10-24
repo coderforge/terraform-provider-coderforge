@@ -29,6 +29,18 @@ resource "coderforge_ks" "example" {
   public_access_cidrs   = ["0.0.0.0/0"]
   logging_enabled       = true
   log_types            = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  encryption_config    = ["secrets"]
+  addons              = ["vpc-cni", "coredns", "kube-proxy", "aws-ebs-csi-driver"]
+  node_group_ami_type  = "AL2_x86_64"
+  node_group_disk_size = 20
+  node_group_taints    = ["node.kubernetes.io/instance-type=t3.medium:NoSchedule"]
+  node_group_labels = {
+    "node-type" = "worker"
+    "environment" = "production"
+  }
+  service_role_arn = "arn:aws:iam::123456789012:role/eksServiceRole"
+  cluster_role_arn = "arn:aws:iam::123456789012:role/eksClusterRole"
+  node_role_arn    = "arn:aws:iam::123456789012:role/eksNodeRole"
   
   tags = {
     Environment = "development"

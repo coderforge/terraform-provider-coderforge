@@ -11,34 +11,33 @@ The provider supports the following resources:
 - `coderforge_container_registry` - Manage container registries
 - `coderforge_ks` - Deploy Kubernetes clusters (KS)
 - `coderforge_cs` - Deploy container services (CS)
-- `coderforge_eks` - Deploy Amazon EKS-like clusters
-- `coderforge_ecs` - Deploy Amazon ECS-like services
 
-## EKS Resource
+## KS Resource (Enhanced)
 
-The `coderforge_eks` resource provides Amazon EKS-like functionality with support for:
+The `coderforge_ks` resource provides comprehensive Kubernetes cluster management with support for:
 
-- Cluster management with configurable Kubernetes versions
-- Node group configuration with instance types and scaling
-- VPC and networking configuration
-- Security group and subnet management
-- Endpoint access control (private/public)
-- Logging configuration
-- Encryption settings
-- Addon management
-- Tagging support
+- **Cluster Management**: Configurable Kubernetes versions, cluster status monitoring
+- **Node Group Configuration**: Instance types, scaling (min/max/desired), AMI types, disk sizes
+- **Networking**: VPC and subnet configuration, security groups
+- **Access Control**: Endpoint private/public access, public access CIDRs
+- **Logging**: Configurable logging with multiple log types
+- **Security**: Encryption configuration, node group taints and labels
+- **Addons**: Kubernetes addon management (VPC CNI, CoreDNS, etc.)
+- **IAM Integration**: Service roles, cluster roles, node roles
+- **Monitoring**: Cluster and node group status, cluster endpoint, CA certificate
+- **Tagging**: Comprehensive resource tagging
 
-## ECS Resource
+## CS Resource (Enhanced)
 
-The `coderforge_ecs` resource provides Amazon ECS-like functionality with support for:
+The `coderforge_cs` resource provides comprehensive container service management with support for:
 
-- Service and cluster management
-- Task definition configuration
-- Fargate and EC2 launch types
-- Load balancer integration
-- Container configuration (image, memory, CPU)
-- Environment variables and secrets
-- Health check configuration
-- Deployment configuration
-- VPC and networking setup
-- Tagging support
+- **Service Management**: Service and cluster configuration, status monitoring
+- **Task Definition**: Family and revision management, launch types (Fargate/EC2)
+- **Container Configuration**: Image, memory, CPU, port configuration
+- **Networking**: VPC, subnets, security groups, load balancer integration
+- **Environment**: Environment variables and secrets management
+- **Health & Deployment**: Health check grace period, deployment configuration
+- **IAM Integration**: Service roles, task roles, execution roles
+- **Monitoring**: Service status, task status, running/pending counts
+- **Compatibility**: Network mode and compatibility requirements
+- **Tagging**: Comprehensive resource tagging

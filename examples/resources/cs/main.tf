@@ -31,12 +31,29 @@ resource "coderforge_cs" "example" {
   container_image          = "nginx:latest"
   container_memory         = 512
   container_cpu            = 256
+  health_check_grace_period = 300
+  network_mode            = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
   
   environment_variables = {
     NODE_ENV = "production"
     PORT     = "80"
     LOG_LEVEL = "info"
   }
+  
+  secrets = {
+    DATABASE_URL = "arn:aws:secretsmanager:us-east-1:123456789012:secret:myapp/database-url"
+    API_KEY      = "arn:aws:secretsmanager:us-east-1:123456789012:secret:myapp/api-key"
+  }
+  
+  deployment_configuration = [
+    "maximum_percent=200",
+    "minimum_healthy_percent=100"
+  ]
+  
+  service_role_arn   = "arn:aws:iam::123456789012:role/ecsServiceRole"
+  task_role_arn      = "arn:aws:iam::123456789012:role/ecsTaskRole"
+  execution_role_arn = "arn:aws:iam::123456789012:role/ecsTaskExecutionRole"
   
   tags = {
     Environment = "development"
