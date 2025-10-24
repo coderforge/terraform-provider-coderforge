@@ -1,0 +1,319 @@
+package provider
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var (
+	_ resource.Resource              = &ecsResource{}
+	_ resource.ResourceWithConfigure = &ecsResource{}
+)
+
+func NewEcsResource() resource.Resource {
+	return &ecsResource{}
+}
+
+type ecsResourceModel struct {
+	ID                    types.String `tfsdk:"id"`
+	ClusterName           types.String `tfsdk:"cluster_name"`
+	ServiceName           types.String `tfsdk:"service_name"`
+	TaskDefinitionFamily  types.String `tfsdk:"task_definition_family"`
+	TaskDefinitionRevision types.String `tfsdk:"task_definition_revision"`
+	DesiredCount          types.Int64  `tfsdk:"desired_count"`
+	LaunchType            types.String `tfsdk:"launch_type"`
+	PlatformVersion       types.String `tfsdk:"platform_version"`
+	Region                types.String `tfsdk:"region"`
+	VpcId                 types.String `tfsdk:"vpc_id"`
+	SubnetIds             types.List   `tfsdk:"subnet_ids"`
+	SecurityGroupIds      types.List   `tfsdk:"security_group_ids"`
+	LoadBalancerArn       types.String `tfsdk:"load_balancer_arn"`
+	TargetGroupArn        types.String `tfsdk:"target_group_arn"`
+	ContainerPort         types.Int64  `tfsdk:"container_port"`
+	ContainerName         types.String `tfsdk:"container_name"`
+	ContainerImage        types.String `tfsdk:"container_image"`
+	ContainerMemory       types.Int64  `tfsdk:"container_memory"`
+	ContainerCpu          types.Int64  `tfsdk:"container_cpu"`
+	EnvironmentVariables  types.Map    `tfsdk:"environment_variables"`
+	Secrets               types.Map    `tfsdk:"secrets"`
+	HealthCheckGracePeriod types.Int64  `tfsdk:"health_check_grace_period"`
+	DeploymentConfiguration types.List   `tfsdk:"deployment_configuration"`
+	Tags                  types.Map    `tfsdk:"tags"`
+	LastUpdated           types.String `tfsdk:"last_updated"`
+}
+
+type ecsResource struct {
+	client *Client
+}
+
+func (r *ecsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_ecs"
+}
+
+func (r *ecsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
+			"cluster_name": schema.StringAttribute{
+				Required: true,
+			},
+			"service_name": schema.StringAttribute{
+				Required: true,
+			},
+			"task_definition_family": schema.StringAttribute{
+				Required: true,
+			},
+			"task_definition_revision": schema.StringAttribute{
+				Optional: true,
+			},
+			"desired_count": schema.Int64Attribute{
+				Optional: true,
+			},
+			"launch_type": schema.StringAttribute{
+				Optional: true,
+			},
+			"platform_version": schema.StringAttribute{
+				Optional: true,
+			},
+			"region": schema.StringAttribute{
+				Required: true,
+			},
+			"vpc_id": schema.StringAttribute{
+				Optional: true,
+			},
+			"subnet_ids": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"security_group_ids": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"load_balancer_arn": schema.StringAttribute{
+				Optional: true,
+			},
+			"target_group_arn": schema.StringAttribute{
+				Optional: true,
+			},
+			"container_port": schema.Int64Attribute{
+				Optional: true,
+			},
+			"container_name": schema.StringAttribute{
+				Optional: true,
+			},
+			"container_image": schema.StringAttribute{
+				Optional: true,
+			},
+			"container_memory": schema.Int64Attribute{
+				Optional: true,
+			},
+			"container_cpu": schema.Int64Attribute{
+				Optional: true,
+			},
+			"environment_variables": schema.MapAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"secrets": schema.MapAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"health_check_grace_period": schema.Int64Attribute{
+				Optional: true,
+			},
+			"deployment_configuration": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"tags": schema.MapAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			"last_updated": schema.StringAttribute{
+				Computed: true,
+			},
+		},
+	}
+}
+
+// Create a new resource.
+func (r *ecsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	// Retrieve values from plan
+	var plan ecsResourceModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Generate API request body from plan
+	var resourceItem ResourceItem
+	resourceItem.Type = "ecs"
+	resourceItem.Name = plan.ServiceName.ValueString()
+	
+	// For ECS, we'll store configuration in a simplified way
+	code := Code{
+		PackageType: "container",
+		ImageUri:    plan.ContainerImage.ValueString(),
+		Runtime:     plan.LaunchType.ValueString(),
+	}
+	resourceItem.Code = code
+	resourceItem.MaxRamSize = fmt.Sprintf("%d", plan.ContainerMemory.ValueInt64())
+
+	resourceItemRes, err := r.client.CreateResource(ctx, resourceItem)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating ECS service",
+			"Could not create ECS service, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(resourceItemRes.ID)
+	plan.ServiceName = types.StringValue(resourceItemRes.Name)
+	plan.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
+	plan.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Read resource information.
+func (r *ecsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state ecsResourceModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resourceItemRes, err := r.client.GetResource(ctx, state.ID.ValueString())
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		resp.Diagnostics.AddError(
+			"Error Reading ECS Service",
+			"Could not read ECS service ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	if resourceItemRes == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	
+	state.ID = types.StringValue(resourceItemRes.ID)
+	state.ServiceName = types.StringValue(resourceItemRes.Name)
+	state.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
+	state.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
+
+	diags = resp.State.Set(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *ecsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan ecsResourceModel
+	diags := req.Plan.Get(ctx, &plan)
+	var state ecsResourceModel
+	diagsState := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(diagsState...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	
+	var resourceItem ResourceItem
+	resourceItem.ID = state.ID.ValueString()
+	resourceItem.Type = "ecs"
+	resourceItem.Name = plan.ServiceName.ValueString()
+	code := Code{
+		PackageType: "container",
+		ImageUri:    plan.ContainerImage.ValueString(),
+		Runtime:     plan.LaunchType.ValueString(),
+	}
+	resourceItem.Code = code
+	resourceItem.MaxRamSize = fmt.Sprintf("%d", plan.ContainerMemory.ValueInt64())
+
+	resourceItemRes, err := r.client.UpdateResource(ctx, resourceItem)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating ECS service",
+			"Could not update ECS service, unexpected error: "+err.Error(),
+		)
+		return
+	}
+	
+	plan.ID = types.StringValue(resourceItemRes.ID)
+	plan.ServiceName = types.StringValue(resourceItemRes.Name)
+	plan.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
+	plan.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(diagsState...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *ecsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	// Retrieve values from plan
+	var plan ecsResourceModel
+	diags := req.State.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := r.client.DeleteResource(ctx, plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting ECS service",
+			"Could not delete ECS service, unexpected error: "+err.Error(),
+		)
+	}
+	return
+}
+
+// Configure adds the provider configured client to the resource.
+func (r *ecsResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Add a nil check when handling ProviderData because Terraform
+	// sets that data after it calls the ConfigureProvider RPC.
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(*Client)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *provider.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
+}

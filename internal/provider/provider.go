@@ -179,5 +179,7 @@ func (p *coderforgeProvider) Resources(_ context.Context) []func() resource.Reso
         NewContainerRegistryResource,
         NewKsResource,
         NewCsResource,
+        NewEksResource,
+        NewEcsResource,
 	}
 }
