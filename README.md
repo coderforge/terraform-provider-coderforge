@@ -12,20 +12,25 @@ The provider supports the following resources:
 - `coderforge_ks` - Deploy Kubernetes clusters (KS)
 - `coderforge_cs` - Deploy container services (CS)
 
-## KS Resource (Enhanced)
+## KS Resource (Simplified)
 
-The `coderforge_ks` resource provides comprehensive Kubernetes cluster management with support for:
+The `coderforge_ks` resource provides focused Kubernetes cluster management with core fields:
 
-- **Cluster Management**: Configurable Kubernetes versions, cluster status monitoring
-- **Node Group Configuration**: Instance types, scaling (min/max/desired), AMI types, disk sizes
-- **Networking**: VPC and subnet configuration, security groups
-- **Access Control**: Endpoint private/public access, public access CIDRs
-- **Logging**: Configurable logging with multiple log types
-- **Security**: Encryption configuration, node group taints and labels
-- **Addons**: Kubernetes addon management (VPC CNI, CoreDNS, etc.)
-- **IAM Integration**: Service roles, cluster roles, node roles
-- **Monitoring**: Cluster and node group status, cluster endpoint, CA certificate
-- **Tagging**: Comprehensive resource tagging
+- **Core Fields**:
+  - `cluster_name` - Name of the Kubernetes cluster
+  - `version` - Kubernetes version
+  - `node_group_name` - Name of the node group
+  - `node_instance_type` - Instance type for nodes
+  - `node_min_size` - Minimum number of nodes
+  - `node_max_size` - Maximum number of nodes
+  - `node_desired_size` - Desired number of nodes
+
+- **Inherited Fields** (from BaseResourceModel):
+  - `security_group_ids` - Security group IDs
+  - `logging_enabled` - Enable logging
+  - `log_types` - Types of logs to collect
+  - `tags` - Resource tags
+  - `last_updated` - Last update timestamp (computed)
 
 ## CS Resource (Enhanced)
 

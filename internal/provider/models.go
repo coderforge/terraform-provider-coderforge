@@ -1,5 +1,7 @@
 package provider
 
+import "github.com/hashicorp/terraform-plugin-framework/types"
+
 type CloudData struct {
 	StackId       string         `json:"stackId"`
 	CloudSpace    string         `json:"cloudSpace"`
@@ -36,4 +38,13 @@ type DataItem struct {
 
 type LogoutStruct struct {
 	IdTokenHint string `json:"id_token_hint"`
+}
+
+// BaseResourceModel contains common fields that all resources inherit
+type BaseResourceModel struct {
+	SecurityGroupIds types.List   `tfsdk:"security_group_ids"`
+	LoggingEnabled   types.Bool   `tfsdk:"logging_enabled"`
+	LogTypes         types.List   `tfsdk:"log_types"`
+	Tags             types.Map    `tfsdk:"tags"`
+	LastUpdated      types.String `tfsdk:"last_updated"`
 }

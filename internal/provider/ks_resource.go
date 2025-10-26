@@ -21,38 +21,15 @@ func NewKsResource() resource.Resource {
 }
 
 type ksResourceModel struct {
-	ID                    types.String `tfsdk:"id"`
-	ClusterName           types.String `tfsdk:"cluster_name"`
-	Version               types.String `tfsdk:"version"`
-	Region                types.String `tfsdk:"region"`
-	NodeGroupName         types.String `tfsdk:"node_group_name"`
-	NodeInstanceType      types.String `tfsdk:"node_instance_type"`
-	NodeMinSize           types.Int64  `tfsdk:"node_min_size"`
-	NodeMaxSize           types.Int64  `tfsdk:"node_max_size"`
-	NodeDesiredSize       types.Int64  `tfsdk:"node_desired_size"`
-	VpcId                 types.String `tfsdk:"vpc_id"`
-	SubnetIds             types.List   `tfsdk:"subnet_ids"`
-	SecurityGroupIds      types.List   `tfsdk:"security_group_ids"`
-	EndpointPrivateAccess types.Bool   `tfsdk:"endpoint_private_access"`
-	EndpointPublicAccess  types.Bool   `tfsdk:"endpoint_public_access"`
-	PublicAccessCidrs     types.List   `tfsdk:"public_access_cidrs"`
-	LoggingEnabled        types.Bool   `tfsdk:"logging_enabled"`
-	LogTypes              types.List   `tfsdk:"log_types"`
-	EncryptionConfig      types.List   `tfsdk:"encryption_config"`
-	Addons                types.List   `tfsdk:"addons"`
-	NodeGroupAmiType      types.String `tfsdk:"node_group_ami_type"`
-	NodeGroupDiskSize     types.Int64  `tfsdk:"node_group_disk_size"`
-	NodeGroupTaints       types.List   `tfsdk:"node_group_taints"`
-	NodeGroupLabels       types.Map    `tfsdk:"node_group_labels"`
-	ServiceRoleArn        types.String `tfsdk:"service_role_arn"`
-	ClusterRoleArn        types.String `tfsdk:"cluster_role_arn"`
-	NodeRoleArn           types.String `tfsdk:"node_role_arn"`
-	ClusterEndpoint       types.String `tfsdk:"cluster_endpoint"`
-	ClusterCaCertificate  types.String `tfsdk:"cluster_ca_certificate"`
-	ClusterStatus         types.String `tfsdk:"cluster_status"`
-	NodeGroupStatus       types.String `tfsdk:"node_group_status"`
-	Tags                  types.Map    `tfsdk:"tags"`
-	LastUpdated           types.String `tfsdk:"last_updated"`
+	BaseResourceModel
+	ID              types.String `tfsdk:"id"`
+	ClusterName     types.String `tfsdk:"cluster_name"`
+	Version         types.String `tfsdk:"version"`
+	NodeGroupName   types.String `tfsdk:"node_group_name"`
+	NodeInstanceType types.String `tfsdk:"node_instance_type"`
+	NodeMinSize     types.Int64  `tfsdk:"node_min_size"`
+	NodeMaxSize     types.Int64  `tfsdk:"node_max_size"`
+	NodeDesiredSize types.Int64  `tfsdk:"node_desired_size"`
 }
 
 type ksResource struct {
@@ -75,9 +52,6 @@ func (r *ksResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 			"version": schema.StringAttribute{
 				Optional: true,
 			},
-			"region": schema.StringAttribute{
-				Required: true,
-			},
 			"node_group_name": schema.StringAttribute{
 				Optional: true,
 			},
@@ -93,24 +67,8 @@ func (r *ksResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 			"node_desired_size": schema.Int64Attribute{
 				Optional: true,
 			},
-			"vpc_id": schema.StringAttribute{
-				Optional: true,
-			},
-			"subnet_ids": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
+			// Inherited fields from BaseResourceModel
 			"security_group_ids": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			"endpoint_private_access": schema.BoolAttribute{
-				Optional: true,
-			},
-			"endpoint_public_access": schema.BoolAttribute{
-				Optional: true,
-			},
-			"public_access_cidrs": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 			},
@@ -120,49 +78,6 @@ func (r *ksResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 			"log_types": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
-			},
-			"encryption_config": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			"addons": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			"node_group_ami_type": schema.StringAttribute{
-				Optional: true,
-			},
-			"node_group_disk_size": schema.Int64Attribute{
-				Optional: true,
-			},
-			"node_group_taints": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			"node_group_labels": schema.MapAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			"service_role_arn": schema.StringAttribute{
-				Optional: true,
-			},
-			"cluster_role_arn": schema.StringAttribute{
-				Optional: true,
-			},
-			"node_role_arn": schema.StringAttribute{
-				Optional: true,
-			},
-			"cluster_endpoint": schema.StringAttribute{
-				Computed: true,
-			},
-			"cluster_ca_certificate": schema.StringAttribute{
-				Computed: true,
-			},
-			"cluster_status": schema.StringAttribute{
-				Computed: true,
-			},
-			"node_group_status": schema.StringAttribute{
-				Computed: true,
 			},
 			"tags": schema.MapAttribute{
 				ElementType: types.StringType,

@@ -21,6 +21,7 @@ func NewCsResource() resource.Resource {
 }
 
 type csResourceModel struct {
+	BaseResourceModel
 	ID                    types.String `tfsdk:"id"`
 	ClusterName           types.String `tfsdk:"cluster_name"`
 	ServiceName           types.String `tfsdk:"service_name"`
@@ -32,7 +33,6 @@ type csResourceModel struct {
 	Region                types.String `tfsdk:"region"`
 	VpcId                 types.String `tfsdk:"vpc_id"`
 	SubnetIds             types.List   `tfsdk:"subnet_ids"`
-	SecurityGroupIds      types.List   `tfsdk:"security_group_ids"`
 	LoadBalancerArn       types.String `tfsdk:"load_balancer_arn"`
 	TargetGroupArn        types.String `tfsdk:"target_group_arn"`
 	ContainerPort         types.Int64  `tfsdk:"container_port"`
@@ -53,8 +53,6 @@ type csResourceModel struct {
 	PendingCount           types.Int64  `tfsdk:"pending_count"`
 	NetworkMode           types.String `tfsdk:"network_mode"`
 	RequiresCompatibilities types.List   `tfsdk:"requires_compatibilities"`
-	Tags                  types.Map    `tfsdk:"tags"`
-	LastUpdated           types.String `tfsdk:"last_updated"`
 }
 
 type csResource struct {
@@ -102,6 +100,7 @@ func (r *csResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 				ElementType: types.StringType,
 				Optional:    true,
 			},
+			// Inherited fields from BaseResourceModel
 			"security_group_ids": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
@@ -167,6 +166,14 @@ func (r *csResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 				Optional: true,
 			},
 			"requires_compatibilities": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+			},
+			// Additional inherited fields from BaseResourceModel
+			"logging_enabled": schema.BoolAttribute{
+				Optional: true,
+			},
+			"log_types": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 			},
