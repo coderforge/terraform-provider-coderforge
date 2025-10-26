@@ -32,17 +32,24 @@ The `coderforge_ks` resource provides focused Kubernetes cluster management with
   - `tags` - Resource tags
   - `last_updated` - Last update timestamp (computed)
 
-## CS Resource (Enhanced)
+## CS Resource (Simplified)
 
-The `coderforge_cs` resource provides comprehensive container service management with support for:
+The `coderforge_cs` resource provides focused container service management with core fields:
 
-- **Service Management**: Service and cluster configuration, status monitoring
-- **Task Definition**: Family and revision management, launch types (Fargate/EC2)
-- **Container Configuration**: Image, memory, CPU, port configuration
-- **Networking**: VPC, subnets, security groups, load balancer integration
-- **Environment**: Environment variables and secrets management
-- **Health & Deployment**: Health check grace period, deployment configuration
-- **IAM Integration**: Service roles, task roles, execution roles
-- **Monitoring**: Service status, task status, running/pending counts
-- **Compatibility**: Network mode and compatibility requirements
-- **Tagging**: Comprehensive resource tagging
+- **Core Fields**:
+  - `service_name` - Name of the container service
+  - `desired_count` - Number of desired instances
+  - `platform_version` - Platform version for the service
+  - `container_port` - Port the container listens on
+  - `container_name` - Name of the container
+  - `container_image` - Docker image to use
+  - `container_memory` - Memory allocation for the container
+  - `container_cpu` - CPU allocation for the container
+  - `environment_variables` - Environment variables for the container
+
+- **Inherited Fields** (from BaseResourceModel):
+  - `security_group_ids` - Security group IDs
+  - `logging_enabled` - Enable logging
+  - `log_types` - Types of logs to collect
+  - `tags` - Resource tags
+  - `last_updated` - Last update timestamp (computed)

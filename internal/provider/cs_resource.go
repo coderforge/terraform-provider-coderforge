@@ -22,37 +22,16 @@ func NewCsResource() resource.Resource {
 
 type csResourceModel struct {
 	BaseResourceModel
-	ID                    types.String `tfsdk:"id"`
-	ClusterName           types.String `tfsdk:"cluster_name"`
-	ServiceName           types.String `tfsdk:"service_name"`
-	TaskDefinitionFamily  types.String `tfsdk:"task_definition_family"`
-	TaskDefinitionRevision types.String `tfsdk:"task_definition_revision"`
-	DesiredCount          types.Int64  `tfsdk:"desired_count"`
-	LaunchType            types.String `tfsdk:"launch_type"`
-	PlatformVersion       types.String `tfsdk:"platform_version"`
-	Region                types.String `tfsdk:"region"`
-	VpcId                 types.String `tfsdk:"vpc_id"`
-	SubnetIds             types.List   `tfsdk:"subnet_ids"`
-	LoadBalancerArn       types.String `tfsdk:"load_balancer_arn"`
-	TargetGroupArn        types.String `tfsdk:"target_group_arn"`
-	ContainerPort         types.Int64  `tfsdk:"container_port"`
-	ContainerName         types.String `tfsdk:"container_name"`
-	ContainerImage        types.String `tfsdk:"container_image"`
-	ContainerMemory       types.Int64  `tfsdk:"container_memory"`
-	ContainerCpu          types.Int64  `tfsdk:"container_cpu"`
-	EnvironmentVariables  types.Map    `tfsdk:"environment_variables"`
-	Secrets               types.Map    `tfsdk:"secrets"`
-	HealthCheckGracePeriod types.Int64  `tfsdk:"health_check_grace_period"`
-	DeploymentConfiguration types.List   `tfsdk:"deployment_configuration"`
-	ServiceRoleArn        types.String `tfsdk:"service_role_arn"`
-	TaskRoleArn           types.String `tfsdk:"task_role_arn"`
-	ExecutionRoleArn      types.String `tfsdk:"execution_role_arn"`
-	ServiceStatus         types.String `tfsdk:"service_status"`
-	TaskStatus            types.String `tfsdk:"task_status"`
-	RunningCount          types.Int64  `tfsdk:"running_count"`
-	PendingCount           types.Int64  `tfsdk:"pending_count"`
-	NetworkMode           types.String `tfsdk:"network_mode"`
-	RequiresCompatibilities types.List   `tfsdk:"requires_compatibilities"`
+	ID                   types.String `tfsdk:"id"`
+	ServiceName          types.String `tfsdk:"service_name"`
+	DesiredCount         types.Int64  `tfsdk:"desired_count"`
+	PlatformVersion      types.String `tfsdk:"platform_version"`
+	ContainerPort        types.Int64  `tfsdk:"container_port"`
+	ContainerName        types.String `tfsdk:"container_name"`
+	ContainerImage       types.String `tfsdk:"container_image"`
+	ContainerMemory      types.Int64  `tfsdk:"container_memory"`
+	ContainerCpu         types.Int64  `tfsdk:"container_cpu"`
+	EnvironmentVariables types.Map    `tfsdk:"environment_variables"`
 }
 
 type csResource struct {
@@ -69,46 +48,13 @@ func (r *csResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"cluster_name": schema.StringAttribute{
-				Required: true,
-			},
 			"service_name": schema.StringAttribute{
 				Required: true,
-			},
-			"task_definition_family": schema.StringAttribute{
-				Required: true,
-			},
-			"task_definition_revision": schema.StringAttribute{
-				Optional: true,
 			},
 			"desired_count": schema.Int64Attribute{
 				Optional: true,
 			},
-			"launch_type": schema.StringAttribute{
-				Optional: true,
-			},
 			"platform_version": schema.StringAttribute{
-				Optional: true,
-			},
-			"region": schema.StringAttribute{
-				Required: true,
-			},
-			"vpc_id": schema.StringAttribute{
-				Optional: true,
-			},
-			"subnet_ids": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			// Inherited fields from BaseResourceModel
-			"security_group_ids": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			"load_balancer_arn": schema.StringAttribute{
-				Optional: true,
-			},
-			"target_group_arn": schema.StringAttribute{
 				Optional: true,
 			},
 			"container_port": schema.Int64Attribute{
@@ -130,46 +76,11 @@ func (r *csResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 				ElementType: types.StringType,
 				Optional:    true,
 			},
-			"secrets": schema.MapAttribute{
+			// Inherited fields from BaseResourceModel
+			"security_group_ids": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 			},
-			"health_check_grace_period": schema.Int64Attribute{
-				Optional: true,
-			},
-			"deployment_configuration": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			"service_role_arn": schema.StringAttribute{
-				Optional: true,
-			},
-			"task_role_arn": schema.StringAttribute{
-				Optional: true,
-			},
-			"execution_role_arn": schema.StringAttribute{
-				Optional: true,
-			},
-			"service_status": schema.StringAttribute{
-				Computed: true,
-			},
-			"task_status": schema.StringAttribute{
-				Computed: true,
-			},
-			"running_count": schema.Int64Attribute{
-				Computed: true,
-			},
-			"pending_count": schema.Int64Attribute{
-				Computed: true,
-			},
-			"network_mode": schema.StringAttribute{
-				Optional: true,
-			},
-			"requires_compatibilities": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-			},
-			// Additional inherited fields from BaseResourceModel
 			"logging_enabled": schema.BoolAttribute{
 				Optional: true,
 			},
@@ -207,7 +118,7 @@ func (r *csResource) Create(ctx context.Context, req resource.CreateRequest, res
 	code := Code{
 		PackageType: "container",
 		ImageUri:    plan.ContainerImage.ValueString(),
-		Runtime:     plan.LaunchType.ValueString(),
+		Runtime:     "container",
 	}
 	resourceItem.Code = code
 	resourceItem.MaxRamSize = fmt.Sprintf("%d", plan.ContainerMemory.ValueInt64())
@@ -225,7 +136,6 @@ func (r *csResource) Create(ctx context.Context, req resource.CreateRequest, res
 	plan.ID = types.StringValue(resourceItemRes.ID)
 	plan.ServiceName = types.StringValue(resourceItemRes.Name)
 	plan.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
-	plan.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	diags = resp.State.Set(ctx, plan)
@@ -264,7 +174,6 @@ func (r *csResource) Read(ctx context.Context, req resource.ReadRequest, resp *r
 	state.ID = types.StringValue(resourceItemRes.ID)
 	state.ServiceName = types.StringValue(resourceItemRes.Name)
 	state.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
-	state.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -292,7 +201,7 @@ func (r *csResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	code := Code{
 		PackageType: "container",
 		ImageUri:    plan.ContainerImage.ValueString(),
-		Runtime:     plan.LaunchType.ValueString(),
+		Runtime:     "container",
 	}
 	resourceItem.Code = code
 	resourceItem.MaxRamSize = fmt.Sprintf("%d", plan.ContainerMemory.ValueInt64())
@@ -309,7 +218,6 @@ func (r *csResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	plan.ID = types.StringValue(resourceItemRes.ID)
 	plan.ServiceName = types.StringValue(resourceItemRes.Name)
 	plan.ContainerImage = types.StringValue(resourceItemRes.Code.ImageUri)
-	plan.LaunchType = types.StringValue(resourceItemRes.Code.Runtime)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 	
 	diags = resp.State.Set(ctx, plan)
