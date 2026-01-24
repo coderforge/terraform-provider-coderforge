@@ -1,0 +1,8 @@
+/examples/resources/machine/.terraform/
+/examples/resources/service/.terraform/
+/examples/resources/service/.terraform.lock.hcl
+/examples/resources/service/terraform.tfstate
+/examples/resources/service/terraform.tfstate.backup
+/examples/resources/machine/terraform.tfstate.backup
+/examples/resources/machine/terraform.tfstate
+/examples/resources/machine/.terraform.lock.hcl

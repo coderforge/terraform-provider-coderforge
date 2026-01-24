@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const defaultHostURL string = "https://api.coderforge.org"
+const defaultHostURL string = "https://api.coderforge.org/cloudbuilder/terraform"
 
 var ErrNotFound = errors.New("not_found")
 
@@ -52,21 +52,21 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-    defer func(Body io.ReadCloser) {
-        _ = Body.Close()
-    }(res.Body)
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res.Body)
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-    if res.StatusCode < 200 || res.StatusCode >= 300 {
-        if res.StatusCode == http.StatusNotFound {
-            return nil, ErrNotFound
-        }
-        return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, body)
-    }
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		if res.StatusCode == http.StatusNotFound {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, body)
+	}
 
 	return body, err
 }
