@@ -146,10 +146,9 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 
 // DataSources defines the data sources implemented in the provider.
 func (p *coderforgeProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	// PRIMA ERA: return []func() datasource.DataSource{}
-	// DEVE ESSERE:
 	return []func() datasource.DataSource{
 		NewServiceDataSource,
+		NewMachineDataSource,
 	}
 }
 
