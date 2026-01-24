@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"os"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -9,15 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"os"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
 	_ provider.Provider = &coderforgeProvider{}
 )
 
-// New is a helper function to simplify provider server and testing implementation.
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
 		return &coderforgeProvider{
@@ -26,29 +25,23 @@ func New(version string) func() provider.Provider {
 	}
 }
 
-// coderforgeProviderModel maps provider schema data to a Go type.
 type coderforgeProviderModel struct {
 	Token      types.String   `tfsdk:"token"`
 	CloudSpace types.String   `tfsdk:"cloud_space"`
 	Locations  []types.String `tfsdk:"locations"`
 	StackId    types.String   `tfsdk:"stack_id"`
+	HostURL    types.String   `tfsdk:"host_url"`
 }
 
-// coderforgeProvider is the provider implementation.
 type coderforgeProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
 	version string
 }
 
-// Metadata returns the provider type name.
 func (p *coderforgeProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "coderforge"
 	resp.Version = p.version
 }
 
-// Schema defines the provider-level schema for configuration data.
 func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
@@ -66,6 +59,9 @@ func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 			"stack_id": schema.StringAttribute{
 				Optional: true,
 			},
+			"host_url": schema.StringAttribute{
+				Optional: true,
+			},
 		},
 	}
 }
@@ -73,7 +69,6 @@ func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 func (p *coderforgeProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	tflog.Info(ctx, "Configuring CoderForge.org client")
 
-	// Retrieve provider data from configuration
 	var config coderforgeProviderModel
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -82,29 +77,28 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	var token string
-
-	if !config.Token.IsNull() {
+	if !config.Token.IsNull() && !config.Token.IsUnknown() {
 		token = config.Token.ValueString()
 	} else {
 		token = os.Getenv("CODERFORGE_CLOUD_TOKEN")
+		if token == "" {
+			token = os.Getenv("CODERFORGE_TOKEN")
+		}
 	}
 
 	if token == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("token"),
-			"Missing CoderForge.org API API Password",
-			"The provider cannot create the CoderForge.org API API client as there is a missing or empty value for the CoderForge.org API token. "+
-				"Set the token value in the configuration or use the CODERFORGE_PASSWORD environment variable. "+
-				"If either is already set, ensure the value is not empty.",
+			"Missing CoderForge.org API token",
+			"The provider cannot create the CoderForge.org API client because the API token is missing.",
 		)
 	}
 
-	if config.CloudSpace.IsNull() {
+	if config.CloudSpace.IsNull() || config.CloudSpace.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("cloud_space"),
-			"Missing CoderForge.org API API cloud_space",
-			"The provider cannot create the CoderForge.org API API client as there is a missing or empty value for the CoderForge.org API cloud_space. "+
-				"Set the cloud_space inside the provider.",
+			"Missing CoderForge.org cloud_space",
+			"The provider cannot create the CoderForge.org API client because cloud_space is missing.",
 		)
 	}
 
@@ -114,45 +108,54 @@ func (p *coderforgeProvider) Configure(ctx context.Context, req provider.Configu
 
 	var cloudSpace = config.CloudSpace.ValueString()
 	var stackId = config.StackId.ValueString()
+	var hostURLStr string
+	if !config.HostURL.IsNull() && !config.HostURL.IsUnknown() {
+		hostURLStr = config.HostURL.ValueString()
+	}
+	if hostURLStr == "" {
+		if v := os.Getenv("CODERFORGE_API_URL"); v != "" {
+			hostURLStr = v
+		} else if v := os.Getenv("CODERFORGE_HOST"); v != "" {
+			hostURLStr = v
+		}
+	}
 
-	ctx = tflog.SetField(ctx, "coderforge_cloud_token", token)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "coderforge_password")
-
-	tflog.Debug(ctx, "Creating CoderForge.org client")
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token", "coderforge_token", "coderforge_cloud_token")
 
 	var locations []string
 	for _, location := range config.Locations {
 		locations = append(locations, location.ValueString())
 	}
 
-	// Create a new CoderForge.org client using the configuration values
-	client, err := NewClient(&token, &cloudSpace, &locations, &stackId)
+	var hostOverride *string
+	if hostURLStr != "" {
+		hostOverride = &hostURLStr
+	}
+	client, err := NewClient(&token, &cloudSpace, &locations, &stackId, hostOverride)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create CoderForge.org API Client",
-			"An unexpected error occurred when creating the CoderForge.org API client. "+
-				"If the error is not clear, please contact the provider developers.\n\n"+
-				"CoderForge.org Client Error: "+err.Error(),
+			"An unexpected error occurred when creating the CoderForge.org API client: "+err.Error(),
 		)
 		return
 	}
 
-	// Make the CoderForge.org client available during DataSource and Resource
-	// type Configure methods.
 	resp.DataSourceData = client
 	resp.ResourceData = client
-
-	tflog.Info(ctx, "Configured CoderForge.org client", map[string]any{"success": true})
 }
 
 // DataSources defines the data sources implemented in the provider.
 func (p *coderforgeProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		NewServiceDataSource,
+		NewMachineDataSource,
+	}
 }
 
 // Resources defines the resources implemented in the provider.
 func (p *coderforgeProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewFunctionResource,
+		NewServiceResource,
+		NewMachineResource,
 	}
 }

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,10 +16,13 @@ func (c *Client) GetResource(ctx context.Context, resourceID string) (*ResourceI
 		return nil, err
 	}
 
-	body, err := c.doRequest(req)
-	if err != nil {
-		return nil, err
-	}
+    body, err := c.doRequest(ctx, req)
+    if err != nil {
+        if errors.Is(err, ErrNotFound) {
+            return nil, ErrNotFound
+        }
+        return nil, err
+    }
 
 	cloudData := CloudData{}
 	err = json.Unmarshal(body, &cloudData)
@@ -28,11 +32,11 @@ func (c *Client) GetResource(ctx context.Context, resourceID string) (*ResourceI
 
 	resourceItems := &cloudData.ResourceItems
 
-	if len(*resourceItems) > 0 {
-		return &(*resourceItems)[0], nil
-	}
+    if len(*resourceItems) > 0 {
+        return &(*resourceItems)[0], nil
+    }
 
-	return nil, nil
+    return nil, ErrNotFound
 }
 
 func (c *Client) CreateResource(ctx context.Context, resourceItem ResourceItem) (*ResourceItem, error) {
@@ -55,7 +59,7 @@ func (c *Client) CreateResource(ctx context.Context, resourceItem ResourceItem) 
 		return nil, err
 	}
 
-	body, err := c.doRequest(req)
+    body, err := c.doRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +96,7 @@ func (c *Client) UpdateResource(ctx context.Context, resourceItem ResourceItem) 
 	if err != nil {
 		return nil, err
 	}
-	body, err := c.doRequest(req)
+    body, err := c.doRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +126,7 @@ func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
 	if err != nil {
 		return err
 	}
-	body, err := c.doRequest(req)
+    body, err := c.doRequest(ctx, req)
 	if err != nil {
 		return err
 	}

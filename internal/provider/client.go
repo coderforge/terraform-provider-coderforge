@@ -1,14 +1,17 @@
 package provider
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 )
 
-const HostURL string = "https://api.coderforge.org"
+const defaultHostURL string = "https://api.coderforge.org/cloudbuilder/terraform"
+
+var ErrNotFound = errors.New("not_found")
 
 type Client struct {
 	StackId    string
@@ -19,10 +22,14 @@ type Client struct {
 	Locations  []string
 }
 
-func NewClient(token *string, cloudSpace *string, locations *[]string, stackId *string) (*Client, error) {
+func NewClient(token *string, cloudSpace *string, locations *[]string, stackId *string, hostURL *string) (*Client, error) {
+	host := defaultHostURL
+	if hostURL != nil && *hostURL != "" {
+		host = *hostURL
+	}
 	c := Client{
 		StackId:    *stackId,
-		HostURL:    HostURL,
+		HostURL:    host,
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		Token:      *token,
 		CloudSpace: *cloudSpace,
@@ -31,8 +38,14 @@ func NewClient(token *string, cloudSpace *string, locations *[]string, stackId *
 	return &c, nil
 }
 
-func (c *Client) doRequest(req *http.Request) ([]byte, error) {
-	// req.Header.Set("Authorization", "Bearer "+c.Token)
+func (c *Client) doRequest(ctx context.Context, req *http.Request) ([]byte, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	req = req.WithContext(ctx)
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
 	req.Header.Set("X-CoderForge.org-Context", "{\"userId\": \"u00001\"}")
 	req.Header.Set("Content-Type", "application/json")
 	res, err := c.HTTPClient.Do(req)
@@ -40,10 +53,7 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
+		_ = Body.Close()
 	}(res.Body)
 
 	body, err := io.ReadAll(res.Body)
@@ -51,7 +61,10 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		if res.StatusCode == http.StatusNotFound {
+			return nil, ErrNotFound
+		}
 		return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, body)
 	}
 
