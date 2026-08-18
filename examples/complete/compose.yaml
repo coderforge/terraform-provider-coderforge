@@ -1,0 +1,17 @@
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    environment:
+      # Projected from the parameter store and the vault by the platform.
+      - LOG_LEVEL
+      - DATABASE_USER
+      - DATABASE_PASSWORD
+    deploy:
+      replicas: 2
+    volumes:
+      - app-data:/var/lib/app
+
+volumes:
+  app-data:
