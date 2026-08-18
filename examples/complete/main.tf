@@ -22,7 +22,7 @@ provider "coderforge" {
 
 variable "endpoint" {
   type        = string
-  default     = "http://srv12.net.coderforge.org:8080"
+  default     = "https://terraform.coderforge.org"
   description = "Base URL of the terraform-api service."
 }
 

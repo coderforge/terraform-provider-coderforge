@@ -41,7 +41,7 @@ through the environment rather than in HCL keeps it out of version control:
 
 ```bash
 export CODERFORGE_TOKEN='eyJhbGciOi...'
-export CODERFORGE_ENDPOINT='http://srv12.net.coderforge.org:8080'
+export CODERFORGE_ENDPOINT='https://terraform.coderforge.org'
 ```
 
 Every entitlement Cloud Builder enforces applies unchanged: `terraform apply`
@@ -60,7 +60,7 @@ terraform {
 }
 
 provider "coderforge" {
-  endpoint = "http://srv12.net.coderforge.org:8080"
+  endpoint = "https://terraform.coderforge.org"
   # token comes from CODERFORGE_TOKEN
 }
 
@@ -171,7 +171,7 @@ Acceptance tests create real machines and are gated behind `TF_ACC`:
 
 ```bash
 export TF_ACC=1
-export CODERFORGE_ENDPOINT=http://srv12.net.coderforge.org:8080
+export CODERFORGE_ENDPOINT=https://terraform.coderforge.org
 export CODERFORGE_TOKEN=...
 make testacc
 ```

@@ -24,10 +24,10 @@ import (
 const (
 	// DefaultEndpoint points at the terraform-api service. It is a default,
 	// not a constant: every installation overrides it.
-	DefaultEndpoint = "http://srv12.net.coderforge.org:8080"
+	DefaultEndpoint = "https://terraform.coderforge.org"
 
 	// apiPrefix is fixed by the contract; only the host is configurable.
-	apiPrefix = "/api/v1/tf"
+	apiPrefix = "/api/1.0/tf"
 
 	// A create call blocks server-side until the resource has settled, which
 	// for a machine means a full guest boot. The HTTP client must therefore

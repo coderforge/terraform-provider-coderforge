@@ -1,11 +1,11 @@
 # Changelog
 
-## 2.0.0
+## 1.3.0
 
 Rewritten against Cloud Builder's current API, through the new `terraform-api`
 service. **This release is not backward compatible**: the previous version
 targeted an endpoint and resource model that no longer exist, so there is no
-upgrade path from 1.x state. Existing infrastructure should be brought over
+upgrade path from 1.2.x state. Existing infrastructure should be brought over
 with `terraform import`.
 
 ### Removed

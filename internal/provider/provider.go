@@ -71,7 +71,7 @@ func (p *coderforgeProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 			"endpoint": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Base URL of the terraform-api service, for example " +
-					"`http://srv12.net.coderforge.org:8080`. May also be set with the " +
+					"`https://terraform.coderforge.org`. May also be set with the " +
 					"`CODERFORGE_ENDPOINT` environment variable. Defaults to `" + client.DefaultEndpoint + "`.",
 			},
 			"token": schema.StringAttribute{

@@ -17,5 +17,5 @@ terraform {
 #     -d "grant_type=password&username=$USER&password=$PASSWORD" | jq -r .access_token)
 #
 provider "coderforge" {
-  endpoint = "http://srv12.net.coderforge.org:8080"
+  endpoint = "https://terraform.coderforge.org"
 }

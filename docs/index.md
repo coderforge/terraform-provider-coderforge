@@ -35,7 +35,7 @@ terraform {
 #     -d "grant_type=password&username=$USER&password=$PASSWORD" | jq -r .access_token)
 #
 provider "coderforge" {
-  endpoint = "http://srv12.net.coderforge.org:8080"
+  endpoint = "https://terraform.coderforge.org"
 }
 ```
 
@@ -44,7 +44,7 @@ provider "coderforge" {
 
 ### Optional
 
-- `endpoint` (String) Base URL of the terraform-api service, for example `http://srv12.net.coderforge.org:8080`. May also be set with the `CODERFORGE_ENDPOINT` environment variable. Defaults to `http://srv12.net.coderforge.org:8080`.
+- `endpoint` (String) Base URL of the terraform-api service, for example `https://terraform.coderforge.org`. May also be set with the `CODERFORGE_ENDPOINT` environment variable. Defaults to `https://terraform.coderforge.org`.
 - `insecure` (Boolean) Skip TLS certificate verification. Only for an endpoint using a certificate from an internal CA that is not in the trust store. May also be set with `CODERFORGE_INSECURE`.
 - `max_retries` (Number) How many times to retry a request that failed because the API was unreachable. Only read-only requests are retried, so a retry can never create a second resource. Defaults to `3`; may also be set with `CODERFORGE_MAX_RETRIES`.
 - `request_timeout` (String) Ceiling on a single API call, as a Go duration such as `"90m"`. Creating a machine blocks until it has booted, so this has to be generous; the per-resource `timeouts` block is the right place to bound an individual operation. Defaults to `"60m"`.

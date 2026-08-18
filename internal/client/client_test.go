@@ -200,7 +200,7 @@ func TestNamesWithAwkwardCharactersAreEscaped(t *testing.T) {
 	if _, err := c.GetStorage(context.Background(), "store:0001"); err != nil {
 		t.Fatalf("GetStorage() returned an unexpected error: %v", err)
 	}
-	if want := "/api/v1/tf/storages/store:0001"; seenPath != want {
+	if want := "/api/1.0/tf/storages/store:0001"; seenPath != want {
 		t.Fatalf("path = %q, want %q", seenPath, want)
 	}
 }
