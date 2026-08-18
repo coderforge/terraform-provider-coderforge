@@ -1,12 +1,16 @@
+// Copyright (c) 2026 CoderForge.org Ltd.
+// Licensed under the MIT License.
+
 package provider
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"terraform-provider-coderforge/internal/client"
 )
 
 var (
@@ -18,20 +22,24 @@ func NewMachineDataSource() datasource.DataSource {
 	return &machineDataSource{}
 }
 
-type machineDataSourceModel struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Cpu              types.Int64  `tfsdk:"cpu"`
-	Ram              types.String `tfsdk:"ram"`
-	Timeout          types.Int64  `tfsdk:"timeout"`
-	LogsGroup        types.String `tfsdk:"logs_group"`
-	Virtual          types.Bool   `tfsdk:"virtual"`
-	SecurityGroupIds types.List   `tfsdk:"security_group_ids"`
-	Tags             types.Map    `tfsdk:"tags"`
+type machineDataSource struct {
+	client *client.Client
 }
 
-type machineDataSource struct {
-	client *Client
+type machineDataSourceModel struct {
+	Name         types.String `tfsdk:"name"`
+	ID           types.String `tfsdk:"id"`
+	RID          types.String `tfsdk:"rid"`
+	State        types.String `tfsdk:"state"`
+	RawStatus    types.String `tfsdk:"raw_status"`
+	DesiredState types.String `tfsdk:"desired_state"`
+	RAM          types.Int64  `tfsdk:"ram"`
+	CPU          types.Int64  `tfsdk:"cpu"`
+	Network      types.String `tfsdk:"network"`
+	IP           types.String `tfsdk:"ip"`
+	Username     types.String `tfsdk:"username"`
+	ManagedBy    types.String `tfsdk:"managed_by"`
+	Message      types.String `tfsdk:"message"`
 }
 
 func (d *machineDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -40,76 +48,61 @@ func (d *machineDataSource) Metadata(_ context.Context, req datasource.MetadataR
 
 func (d *machineDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Look up a machine that exists in Cloud Builder, whether or not Terraform " +
+			"manages it. Useful for pointing a network rule at a machine someone else created.\n\n" +
+			"The generated password is not available here: Cloud Builder returns it only at creation.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Required: true,
-			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Required:            true,
+				MarkdownDescription: "Name of the machine to look up.",
 			},
-			"cpu": schema.Int64Attribute{
-				Computed: true,
-			},
-			"ram": schema.StringAttribute{
-				Computed: true,
-			},
-			"timeout": schema.Int64Attribute{
-				Computed: true,
-			},
-			"logs_group": schema.StringAttribute{
-				Computed: true,
-			},
-			"virtual": schema.BoolAttribute{
-				Computed: true,
-			},
-			"security_group_ids": schema.ListAttribute{
-				ElementType: types.StringType,
-				Computed:    true,
-			},
-			"tags": schema.MapAttribute{
-				ElementType: types.StringType,
-				Computed:    true,
-			},
+			"id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Same as `name`."},
+			"rid":           schema.StringAttribute{Computed: true, MarkdownDescription: "Cloud Builder resource id."},
+			"state":         schema.StringAttribute{Computed: true, MarkdownDescription: "Normalised state."},
+			"raw_status":    schema.StringAttribute{Computed: true, MarkdownDescription: "Hypervisor status verbatim."},
+			"desired_state": schema.StringAttribute{Computed: true, MarkdownDescription: "Power state the machine currently satisfies."},
+			"ram":           schema.Int64Attribute{Computed: true, MarkdownDescription: "Memory in MiB."},
+			"cpu":           schema.Int64Attribute{Computed: true, MarkdownDescription: "Virtual CPU count."},
+			"network":       schema.StringAttribute{Computed: true, MarkdownDescription: "Configured network adapters."},
+			"ip":            schema.StringAttribute{Computed: true, MarkdownDescription: "Assigned address, if any."},
+			"username":      schema.StringAttribute{Computed: true, MarkdownDescription: "Default account."},
+			"managed_by":    schema.StringAttribute{Computed: true, MarkdownDescription: "Owning resource, if any."},
+			"message":       schema.StringAttribute{Computed: true},
 		},
 	}
 }
 
-func (d *machineDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state machineDataSourceModel
-	req.Config.Get(ctx, &state)
-
-	res, err := d.client.GetResource(ctx, state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading machine data source", err.Error())
-		return
-	}
-
-	state.Name = types.StringValue(res.Name)
-	state.Cpu = types.Int64Value(res.Cpu)
-	state.Ram = types.StringValue(res.Ram)
-	state.Timeout = types.Int64Value(res.Timeout)
-	state.LogsGroup = types.StringValue(res.LogsGroup)
-	state.Virtual = types.BoolValue(res.Virtual)
-
-	sgList, diags := types.ListValueFrom(ctx, types.StringType, res.SecurityGroupIds)
-	resp.Diagnostics.Append(diags...)
-	state.SecurityGroupIds = sgList
-
-	tagsMap, diags := types.MapValueFrom(ctx, types.StringType, res.Tags)
-	resp.Diagnostics.Append(diags...)
-	state.Tags = tagsMap
-
-	resp.State.Set(ctx, &state)
+func (d *machineDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	d.client = configureDataSourceClient(req, resp)
 }
 
-func (d *machineDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
+func (d *machineDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config machineDataSourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	client, ok := req.ProviderData.(*Client)
-	if !ok {
-		resp.Diagnostics.AddError("Unexpected Data Source Configure Type", fmt.Sprintf("Expected *provider.Client, got: %T", req.ProviderData))
+
+	machine, err := d.client.GetMachine(ctx, config.Name.ValueString())
+	if err != nil {
+		// A data source pointing at nothing is an error, not silent drift: the
+		// configuration asked for something that has to exist.
+		addAPIError(&resp.Diagnostics, "read", "machine "+config.Name.ValueString(), err)
 		return
 	}
-	d.client = client
+
+	config.ID = types.StringValue(machine.Name)
+	config.RID = stringValue(machine.RID)
+	config.State = types.StringValue(machine.State)
+	config.RawStatus = types.StringValue(machine.RawStatus)
+	config.DesiredState = types.StringValue(machine.DesiredState)
+	config.RAM = int64Value(machine.RAM)
+	config.CPU = int64Value(machine.CPU)
+	config.Network = stringValue(machine.Network)
+	config.IP = stringValue(machine.IP)
+	config.Username = stringValue(machine.Username)
+	config.ManagedBy = stringValue(machine.ManagedBy)
+	config.Message = types.StringValue(machine.Message)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 }

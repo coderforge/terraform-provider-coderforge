@@ -11,7 +11,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -w -s -X coderforge.org/terraform-provider-coderforge/cmd.version={{.Tag}} -X coderforge.org/terraform-provider-coderforge/cmd.commit={{.Commit}} -X coderforge.org/terraform-provider-coderforge/cmd.date={{.Date}}
+      - -w -s -X main.version={{.Version}}
     goos:
       - freebsd
       - windows

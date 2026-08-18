@@ -2,7 +2,7 @@
 setlocal
 
 :: --- Configuration ---
-set "VERSION=1.1.0"
+set "VERSION=2.0.0"
 set "PROVIDER_NAME=coderforge"
 set "NAMESPACE=coderforge"
 set "HOSTNAME=registry.terraform.io"

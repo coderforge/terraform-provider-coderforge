@@ -1,9 +1,29 @@
 # Examples
 
-This directory contains examples that are mostly used for documentation, but can also be run/tested manually via the Terraform CLI.
+`tfplugindocs` reads specific filenames from this tree to build the registry
+documentation, so the layout is fixed:
 
-The document generation tool looks for files in the following locations by default. All other *.tf files besides the ones mentioned below are ignored by the documentation tool. This is useful for creating examples that can run and/or ar testable even if some parts are not relevant for the documentation.
+| Path | Renders into |
+|---|---|
+| `provider/provider.tf` | The provider index page |
+| `resources/<name>/resource.tf` | The example on that resource's page |
+| `resources/<name>/import.sh` | The import section on that page |
+| `data-sources/<name>/data-source.tf` | The example on that data source's page |
 
-* **provider/provider.tf** example file for the provider index page
-* **data-sources/`full data source name`/data-source.tf** example file for the named data source page
-* **resources/`full resource name`/resource.tf** example file for the named data source page
+`complete/` is not part of the generated docs. It is a working configuration
+that exercises most of the provider at once, and the best starting point for
+trying things out:
+
+```bash
+export CODERFORGE_TOKEN=$(curl -s -X POST \
+  https://auth.coderforge.org/api/1.3/auth/oauth2/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d "grant_type=password&username=$USER&password=$PASSWORD" | jq -r .access_token)
+
+cd complete
+terraform init
+terraform apply -var database_password=...
+```
+
+Applying it provisions real machines, which takes real minutes. `terraform
+destroy` removes everything it created.
